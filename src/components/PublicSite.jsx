@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, Phone, Mail, MapPin, Clock, Euro, Heart, Compass, Users, ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import { toLocalDateStr } from '../utils.js';
+import { toLocalDateStr, addMinutes } from '../utils.js';
 
 export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, menuOpen, setMenuOpen, showToast }) {
   const navItems = [
@@ -337,7 +337,18 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
       note: isSurDevis ? form.besoin : form.note,
     };
     updateBookings([...bookings, newBooking]);
-    if (selectedSlot) updateSlots(slots.map(s => s.id === selectedSlot.id ? { ...s, available: false } : s));
+    if (selectedSlot) {
+      const updatedSlots = slots.map(s => s.id === selectedSlot.id ? { ...s, available: false } : s);
+      const remaining = selectedSlot.duration - selectedService.duration;
+      if (remaining > 0) {
+        const newTime = addMinutes(selectedSlot.time, selectedService.duration);
+        const newId = `${selectedSlot.date}-${newTime}`;
+        if (!updatedSlots.find(s => s.id === newId)) {
+          updatedSlots.push({ id: newId, date: selectedSlot.date, time: newTime, duration: remaining, available: true });
+        }
+      }
+      updateSlots(updatedSlots);
+    }
     setStep(4);
     showToast(isSurDevis ? "Demande de devis envoyée !" : "Réservation enregistrée !");
   };

@@ -434,7 +434,19 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
         onClose={() => setBookingSlot(null)}
         onSubmit={(booking) => {
           updateBookings([...bookings, booking]);
-          updateSlots(slots.map(s => s.id === bookingSlot.id ? { ...s, available: false } : s));
+          const updatedSlots = slots.map(s => s.id === bookingSlot.id ? { ...s, available: false } : s);
+          const svc = services.find(s => s.id === booking.serviceId);
+          if (svc) {
+            const remaining = bookingSlot.duration - svc.duration;
+            if (remaining > 0) {
+              const newTime = addMinutes(bookingSlot.time, svc.duration);
+              const newId = `${bookingSlot.date}-${newTime}`;
+              if (!updatedSlots.find(s => s.id === newId)) {
+                updatedSlots.push({ id: newId, date: bookingSlot.date, time: newTime, duration: remaining, available: true });
+              }
+            }
+          }
+          updateSlots(updatedSlots);
           setBookingSlot(null);
           showToast("Réservation créée");
         }}
@@ -483,7 +495,10 @@ function AdminServices({ services, updateServices, showToast }) {
         <div className="p-6 rounded-2xl mb-6 fade-in" style={{ background: 'var(--cream)', border: '2px solid var(--terracotta-dark)' }}>
           <h3 className="font-display text-2xl mb-4">{editing === 'new' ? 'Nouveau service' : 'Modifier le service'}</h3>
           <div className="grid md:grid-cols-2 gap-3">
-            <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Nom" className="px-3 py-2 rounded-lg border md:col-span-2" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+            <div className="md:col-span-2">
+              <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Nom du service</div>
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Ex : Séance individuelle" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+            </div>
 
             <div className="md:col-span-2 flex items-center gap-3">
               <button
@@ -501,12 +516,24 @@ function AdminServices({ services, updateServices, showToast }) {
 
             {!form.surDevis && (
               <>
-                <input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value) || 0})} placeholder="Durée (min)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <input type="number" value={form.price} onChange={e => setForm({...form, price: parseInt(e.target.value) || 0})} placeholder="Prix (€)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <div>
+                  <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Durée (minutes)</div>
+                  <input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value) || 0})} placeholder="Ex : 60" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Prix (€)</div>
+                  <input type="number" value={form.price} onChange={e => setForm({...form, price: parseInt(e.target.value) || 0})} placeholder="Ex : 55" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                </div>
               </>
             )}
-            <input value={form.priceLabel} onChange={e => setForm({...form, priceLabel: e.target.value})} placeholder={form.surDevis ? 'Sur devis' : 'Affichage du prix (ex: À partir de 55 €)'} className="px-3 py-2 rounded-lg border md:col-span-2" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Description" rows={3} className="px-3 py-2 rounded-lg border md:col-span-2 resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+            <div className="md:col-span-2">
+              <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Affichage du prix</div>
+              <input value={form.priceLabel} onChange={e => setForm({...form, priceLabel: e.target.value})} placeholder={form.surDevis ? 'Sur devis' : 'Ex : À partir de 55 €'} className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+            </div>
+            <div className="md:col-span-2">
+              <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Description</div>
+              <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Décrivez la prestation en quelques phrases…" rows={3} className="w-full px-3 py-2 rounded-lg border resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+            </div>
             <div className="md:col-span-2">
               <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Couleur</div>
               <div className="flex gap-2">
