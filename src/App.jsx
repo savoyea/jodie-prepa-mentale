@@ -107,15 +107,24 @@ export default function App() {
   const [toast, setToast] = useState(null);
 
   // Load persisted data on mount
+  // SLOTS_VERSION : bump quand le format des dates change (ex: passage UTC → local)
+  const SLOTS_VERSION = 2;
   useEffect(() => {
     (async () => {
       const c = await storage.get('content', DEFAULT_CONTENT);
       const s = await storage.get('services', DEFAULT_SERVICES);
-      const sl = await storage.get('slots', null);
       const b = await storage.get('bookings', DEFAULT_BOOKINGS);
+      // Si les slots sont antérieurs à la correction timezone, on régénère
+      const slVersion = await storage.get('slotsVersion', 1);
+      let sl = slVersion >= SLOTS_VERSION ? await storage.get('slots', null) : null;
+      if (!sl || !sl.length) {
+        sl = generateDefaultSlots();
+        storage.set('slots', sl);
+      }
+      if (slVersion < SLOTS_VERSION) storage.set('slotsVersion', SLOTS_VERSION);
       setContent(c);
       setServices(s);
-      setSlots(sl && sl.length ? sl : generateDefaultSlots());
+      setSlots(sl);
       setBookings(b);
       setLoaded(true);
     })();
