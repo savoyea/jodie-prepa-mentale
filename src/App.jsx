@@ -40,8 +40,12 @@ const DEFAULT_SERVICES = [
   { id: 's1', name: "Appel découverte", duration: 30, price: 0, priceLabel: "Gratuit", description: "Un premier échange pour comprendre vos besoins, présenter ma méthode et voir si nous sommes alignés pour avancer ensemble.", color: "sage" },
   { id: 's2', name: "Séance individuelle", duration: 60, price: 55, priceLabel: "À partir de 55 €", description: "Accompagnement personnalisé en présentiel ou en visio. Objectifs précis, outils concrets, suivi sur mesure.", color: "terracotta" },
   { id: 's3', name: "Pack 5 séances", duration: 60, price: 250, priceLabel: "250 €", description: "Cinq séances individuelles à tarif préférentiel pour un accompagnement en profondeur sur un objectif structurant.", color: "ochre" },
-  { id: 's4', name: "Intervention de groupe", duration: 90, price: 0, priceLabel: "Sur devis", description: "Atelier collectif pour équipes, clubs sportifs ou établissements. Thématiques sur mesure.", color: "olive" },
+  { id: 's4', name: "Intervention de groupe", duration: 90, price: 0, priceLabel: "Sur devis", surDevis: true, description: "Atelier collectif pour équipes, clubs sportifs ou établissements. Thématiques sur mesure.", color: "olive" },
 ];
+
+// Format local date as YYYY-MM-DD without UTC conversion
+const toLocalDateStr = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 // Generate 14 days of slots starting today
 const generateDefaultSlots = () => {
@@ -53,10 +57,10 @@ const generateDefaultSlots = () => {
     date.setDate(today.getDate() + d);
     const dow = date.getDay();
     if (dow === 0) continue; // closed Sunday
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toLocalDateStr(date);
     const hours = dow === 6 ? ['09:00', '10:30'] : ['09:00', '10:30', '14:00', '15:30', '17:00'];
     hours.forEach(h => {
-      slots.push({ id: `${dateStr}-${h}`, date: dateStr, time: h, available: true });
+      slots.push({ id: `${dateStr}-${h}`, date: dateStr, time: h, duration: 60, available: true });
     });
   }
   return slots;
@@ -603,8 +607,10 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
   const [step, setStep] = useState(1);
   const [selectedService, setSelectedService] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
-  const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' });
+  const [form, setForm] = useState({ name: '', email: '', phone: '', note: '', besoin: '' });
   const [weekOffset, setWeekOffset] = useState(0);
+
+  const isSurDevis = selectedService?.surDevis;
 
   const availableSlots = slots.filter(s => s.available);
   const today = new Date();
@@ -619,27 +625,38 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
     days.push(d);
   }
 
+  const selectService = (s) => {
+    setSelectedService(s);
+    setStep(s.surDevis ? 3 : 2);
+  };
+
   const submitBooking = () => {
-    if (!form.name || !form.email) {
-      showToast("Veuillez renseigner votre nom et email");
-      return;
-    }
+    if (!form.name || !form.email) { showToast("Veuillez renseigner votre nom et email"); return; }
+    if (isSurDevis && !form.besoin) { showToast("Veuillez décrire votre besoin"); return; }
     const newBooking = {
       id: 'b' + Date.now(),
       clientName: form.name,
       clientEmail: form.email,
       clientPhone: form.phone,
       serviceId: selectedService.id,
-      date: selectedSlot.date,
-      time: selectedSlot.time,
+      date: selectedSlot?.date || '',
+      time: selectedSlot?.time || '',
       status: 'en attente',
-      note: form.note
+      note: isSurDevis ? form.besoin : form.note,
     };
     updateBookings([...bookings, newBooking]);
-    updateSlots(slots.map(s => s.id === selectedSlot.id ? { ...s, available: false } : s));
+    if (selectedSlot) updateSlots(slots.map(s => s.id === selectedSlot.id ? { ...s, available: false } : s));
     setStep(4);
-    showToast("Réservation enregistrée !");
+    showToast(isSurDevis ? "Demande de devis envoyée !" : "Réservation enregistrée !");
   };
+
+  // Stepper adapté : sans l'étape créneau pour surDevis
+  const stepperLabels = isSurDevis
+    ? ['Service', 'Votre besoin', 'Confirmé']
+    : ['Service', 'Créneau', 'Vos infos', 'Confirmé'];
+
+  // Numéro d'étape "réel" dans le stepper affiché
+  const displayStep = isSurDevis && step >= 3 ? step - 1 : step;
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
@@ -648,15 +665,15 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
 
       {/* Stepper */}
       <div className="flex items-center gap-2 mb-10 text-xs font-mono uppercase tracking-widest">
-        {['Service', 'Créneau', 'Vos infos', 'Confirmé'].map((label, i) => (
+        {stepperLabels.map((label, i) => (
           <React.Fragment key={i}>
-            <div className="flex items-center gap-2" style={{ color: step > i ? 'var(--terracotta-dark)' : step === i + 1 ? 'var(--ink)' : 'var(--ink-soft)', opacity: step >= i + 1 ? 1 : 0.4 }}>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: step > i + 1 ? 'var(--sage-dark)' : step === i + 1 ? 'var(--ink)' : 'transparent', color: step >= i + 1 ? 'var(--cream)' : 'inherit', border: step <= i + 1 ? '1px solid currentColor' : 'none' }}>
-                {step > i + 1 ? <Check size={12} /> : i + 1}
+            <div className="flex items-center gap-2" style={{ color: displayStep > i + 1 ? 'var(--terracotta-dark)' : displayStep === i + 1 ? 'var(--ink)' : 'var(--ink-soft)', opacity: displayStep >= i + 1 ? 1 : 0.4 }}>
+              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: displayStep > i + 1 ? 'var(--sage-dark)' : displayStep === i + 1 ? 'var(--ink)' : 'transparent', color: displayStep >= i + 1 ? 'var(--cream)' : 'inherit', border: displayStep <= i + 1 ? '1px solid currentColor' : 'none' }}>
+                {displayStep > i + 1 ? <Check size={12} /> : i + 1}
               </div>
               <span className="hidden md:inline">{label}</span>
             </div>
-            {i < 3 && <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />}
+            {i < stepperLabels.length - 1 && <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />}
           </React.Fragment>
         ))}
       </div>
@@ -666,10 +683,13 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
           <h2 className="font-display text-3xl mb-6">Quel service vous intéresse ?</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {services.map(s => (
-              <button key={s.id} onClick={() => { setSelectedService(s); setStep(2); }} className="text-left p-6 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
-                <h3 className="font-display text-2xl mb-1">{s.name}</h3>
+              <button key={s.id} onClick={() => selectService(s)} className="text-left p-6 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
+                <div className="flex items-start justify-between mb-1 gap-2">
+                  <h3 className="font-display text-2xl">{s.name}</h3>
+                  {s.surDevis && <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0 mt-1" style={{ background: 'var(--ochre)', color: 'var(--cream)' }}>Sur devis</span>}
+                </div>
                 <div className="flex gap-3 text-xs font-mono mb-2" style={{ color: 'var(--ink-soft)' }}>
-                  <span>{s.duration} min</span><span>·</span><span>{s.priceLabel}</span>
+                  {!s.surDevis && <span>{s.duration} min · </span>}<span>{s.priceLabel}</span>
                 </div>
                 <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{s.description}</p>
               </button>
@@ -678,7 +698,7 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
         </div>
       )}
 
-      {step === 2 && (
+      {step === 2 && !isSurDevis && (
         <div className="fade-in">
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display text-3xl">Choisissez un créneau</h2>
@@ -688,10 +708,9 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
               <button onClick={() => setWeekOffset(weekOffset + 1)} className="p-2 rounded-full border" style={{ borderColor: 'var(--line)' }}><ChevronRight size={14} /></button>
             </div>
           </div>
-
           <div className="grid grid-cols-2 md:grid-cols-7 gap-2 mb-6">
             {days.map((d, i) => {
-              const dateStr = d.toISOString().split('T')[0];
+              const dateStr = toLocalDateStr(d);
               const daySlots = availableSlots.filter(s => s.date === dateStr);
               const isPast = d < today;
               return (
@@ -718,20 +737,46 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
 
       {step === 3 && (
         <div className="fade-in max-w-2xl">
-          <h2 className="font-display text-3xl mb-2">Vos coordonnées</h2>
-          <div className="text-sm mb-6 font-mono" style={{ color: 'var(--ink-soft)' }}>
-            {selectedService.name} · {new Date(selectedSlot.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {selectedSlot.time}
-          </div>
-          <div className="space-y-3">
-            <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <input value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <textarea value={form.note} onChange={e => setForm({...form, note: e.target.value})} placeholder="Un message (optionnel)" rows={3} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <div className="flex gap-3">
-              <button onClick={() => setStep(2)} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>← Retour</button>
-              <button onClick={submitBooking} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono flex-1" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>Confirmer</button>
-            </div>
-          </div>
+          {isSurDevis ? (
+            <>
+              <h2 className="font-display text-3xl mb-2">Décrivez votre besoin</h2>
+              <div className="text-sm mb-6 font-mono" style={{ color: 'var(--ink-soft)' }}>{selectedService.name} — Sur devis</div>
+              <div className="space-y-3">
+                <textarea
+                  value={form.besoin}
+                  onChange={e => setForm({ ...form, besoin: e.target.value })}
+                  placeholder="Décrivez votre projet, contexte, nombre de personnes, objectifs… *"
+                  rows={5}
+                  className="w-full px-4 py-3 rounded-lg border outline-none resize-none"
+                  style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
+                />
+                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(1)} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>← Retour</button>
+                  <button onClick={submitBooking} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono flex-1" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>Envoyer la demande</button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="font-display text-3xl mb-2">Vos coordonnées</h2>
+              <div className="text-sm mb-6 font-mono" style={{ color: 'var(--ink-soft)' }}>
+                {selectedService.name} · {selectedSlot && new Date(selectedSlot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {selectedSlot?.time}
+              </div>
+              <div className="space-y-3">
+                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Un message (optionnel)" rows={3} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <div className="flex gap-3">
+                  <button onClick={() => setStep(2)} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>← Retour</button>
+                  <button onClick={submitBooking} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono flex-1" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>Confirmer</button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -740,11 +785,14 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{ background: 'var(--sage-light)' }}>
             <Check size={28} style={{ color: 'var(--sage-dark)' }} />
           </div>
-          <h2 className="font-display text-4xl mb-4">Demande envoyée</h2>
+          <h2 className="font-display text-4xl mb-4">{isSurDevis ? 'Demande envoyée' : 'Demande envoyée'}</h2>
           <p className="text-base max-w-md mx-auto mb-6" style={{ color: 'var(--ink-soft)' }}>
-            Merci {form.name.split(' ')[0]} ! Je reviens vers vous très vite pour confirmer notre rendez-vous du {new Date(selectedSlot.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {selectedSlot.time}.
+            {isSurDevis
+              ? `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour vous proposer un devis personnalisé.`
+              : `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour confirmer notre rendez-vous du ${selectedSlot && new Date(selectedSlot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${selectedSlot?.time}.`
+            }
           </p>
-          <button onClick={() => { setStep(1); setSelectedService(null); setSelectedSlot(null); setForm({ name: '', email: '', phone: '', note: '' }); }} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>
+          <button onClick={() => { setStep(1); setSelectedService(null); setSelectedSlot(null); setForm({ name: '', email: '', phone: '', note: '', besoin: '' }); }} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>
             Nouvelle réservation
           </button>
         </div>
@@ -944,11 +992,22 @@ function BookingDetailModal({ booking, service, onClose, onConfirm, onCancel }) 
   );
 }
 
+const SLOT_DURATIONS = [
+  { label: '30 min', value: 30 },
+  { label: '1h', value: 60 },
+  { label: '1h30', value: 90 },
+  { label: '2h', value: 120 },
+  { label: '2h30', value: 150 },
+  { label: '3h', value: 180 },
+];
+
 function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services, showToast }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [newSlotDate, setNewSlotDate] = useState('');
   const [newSlotTime, setNewSlotTime] = useState('');
+  const [newSlotDuration, setNewSlotDuration] = useState(60);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingSlot, setBookingSlot] = useState(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -962,11 +1021,43 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
     days.push(d);
   }
 
+  // Vérifie si deux plages horaires se chevauchent
+  const toMin = (timeStr) => { const [h, m] = timeStr.split(':').map(Number); return h * 60 + m; };
+  const overlaps = (aStart, aDur, bStart, bDur) => aStart < bStart + bDur && bStart < aStart + aDur;
+
   const addSlot = () => {
     if (!newSlotDate || !newSlotTime) { showToast("Date et heure requises"); return; }
     const id = `${newSlotDate}-${newSlotTime}`;
     if (slots.find(s => s.id === id)) { showToast("Ce créneau existe déjà"); return; }
-    updateSlots([...slots, { id, date: newSlotDate, time: newSlotTime, available: true }]);
+
+    const newStart = toMin(newSlotTime);
+
+    // Conflit avec une résa existante
+    const bookingConflict = bookings.find(b => {
+      if (b.date !== newSlotDate) return false;
+      const svc = services.find(s => s.id === b.serviceId);
+      if (!svc) return false;
+      return overlaps(newStart, newSlotDuration, toMin(b.time), svc.duration);
+    });
+    if (bookingConflict) {
+      const svc = services.find(s => s.id === bookingConflict.serviceId);
+      const end = svc ? addMinutes(bookingConflict.time, svc.duration) : '?';
+      showToast(`Conflit résa : ${bookingConflict.clientName} (${bookingConflict.time}→${end})`);
+      return;
+    }
+
+    // Conflit avec un créneau existant
+    const slotConflict = slots.find(s => {
+      if (s.date !== newSlotDate || s.id === id) return false;
+      return overlaps(newStart, newSlotDuration, toMin(s.time), s.duration || 60);
+    });
+    if (slotConflict) {
+      const end = addMinutes(slotConflict.time, slotConflict.duration || 60);
+      showToast(`Conflit créneau : ${slotConflict.time}→${end}`);
+      return;
+    }
+
+    updateSlots([...slots, { id, date: newSlotDate, time: newSlotTime, duration: newSlotDuration, available: true }]);
     setNewSlotDate(''); setNewSlotTime('');
     showToast("Créneau ajouté");
   };
@@ -993,9 +1084,12 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
       <p className="text-sm mb-8" style={{ color: 'var(--ink-soft)' }}>Gérez vos créneaux. Cliquez sur une réservation pour voir les détails, sur un créneau libre pour l'activer/désactiver.</p>
 
       {/* Add slot */}
-      <div className="p-5 rounded-2xl mb-8 grid md:grid-cols-[1fr_1fr_auto] gap-3" style={{ background: 'var(--cream)' }}>
+      <div className="p-5 rounded-2xl mb-8 grid md:grid-cols-[1fr_1fr_1fr_auto] gap-3" style={{ background: 'var(--cream)' }}>
         <input type="date" value={newSlotDate} onChange={e => setNewSlotDate(e.target.value)} className="px-4 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
         <input type="time" value={newSlotTime} onChange={e => setNewSlotTime(e.target.value)} className="px-4 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+        <select value={newSlotDuration} onChange={e => setNewSlotDuration(Number(e.target.value))} className="px-4 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
+          {SLOT_DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+        </select>
         <button onClick={addSlot} className="px-5 py-2 rounded-lg text-sm font-mono uppercase tracking-widest flex items-center gap-2" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
           <Plus size={14} /> Ajouter
         </button>
@@ -1013,8 +1107,8 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
       {/* Week grid */}
       <div className="grid grid-cols-7 gap-2">
         {days.map((d, i) => {
-          const dateStr = d.toISOString().split('T')[0];
-          const isToday = d.toISOString().split('T')[0] === today.toISOString().split('T')[0];
+          const dateStr = toLocalDateStr(d);
+          const isToday = dateStr === toLocalDateStr(today);
           const daySlots = slots.filter(s => s.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
           return (
             <div key={i} className="p-2 rounded-xl min-h-[200px]" style={{ background: isToday ? 'var(--sage-light)' : 'var(--cream)', border: isToday ? '1.5px solid var(--sage-dark)' : '1.5px solid transparent' }}>
@@ -1046,20 +1140,39 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
                       </button>
                     );
                   }
+                  const slotEnd = s.duration ? addMinutes(s.time, s.duration) : null;
                   return (
-                    <div key={s.id} className="group flex items-center justify-between px-2 py-1.5 rounded-md text-xs"
+                    <div key={s.id} className="group rounded-md text-xs overflow-hidden"
                       style={{
                         background: s.available ? 'rgba(168,181,160,0.25)' : 'var(--line)',
                         color: 'var(--ink)',
-                        opacity: !s.available ? 0.5 : 1
+                        opacity: !s.available ? 0.6 : 1
                       }}>
-                      <button onClick={() => toggleSlot(s.id)} className="flex-1 text-left font-mono text-[11px]">
-                        {s.time}
-                        {!s.available && <div className="text-[9px] opacity-60">bloqué</div>}
-                      </button>
-                      <button onClick={() => removeSlot(s.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                        <Trash2 size={10} />
-                      </button>
+                      {/* Ligne principale : heure + actions */}
+                      <div className="flex items-center justify-between px-2 py-1.5">
+                        <span className="font-mono text-[11px] font-semibold leading-tight">
+                          {s.time}{slotEnd ? ` → ${slotEnd}` : ''}
+                          {!s.available && <span className="text-[9px] opacity-60 ml-1">bloqué</span>}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => toggleSlot(s.id)} title={s.available ? 'Bloquer' : 'Libérer'} className="p-0.5 rounded hover:opacity-70">
+                            <Lock size={9} />
+                          </button>
+                          <button onClick={() => removeSlot(s.id)} title="Supprimer" className="p-0.5 rounded hover:opacity-70">
+                            <Trash2 size={9} />
+                          </button>
+                        </div>
+                      </div>
+                      {/* Bouton Réserver — visible uniquement si libre */}
+                      {s.available && (
+                        <button
+                          onClick={() => setBookingSlot(s)}
+                          className="w-full text-center py-1 text-[9px] font-mono uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity border-t"
+                          style={{ borderColor: 'rgba(107,122,100,0.2)', color: 'var(--sage-dark)', background: 'rgba(168,181,160,0.2)' }}
+                        >
+                          + Réserver
+                        </button>
+                      )}
                     </div>
                   );
                 })}
@@ -1084,6 +1197,102 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
         onConfirm={(id) => setBookingStatus(id, 'confirmé')}
         onCancel={(id) => setBookingStatus(id, 'annulé')}
       />
+
+      <NewBookingModal
+        slot={bookingSlot}
+        services={services}
+        onClose={() => setBookingSlot(null)}
+        onSubmit={(booking) => {
+          updateBookings([...bookings, booking]);
+          updateSlots(slots.map(s => s.id === bookingSlot.id ? { ...s, available: false } : s));
+          setBookingSlot(null);
+          showToast("Réservation créée");
+        }}
+      />
+    </div>
+  );
+}
+
+// --- Modal : nouvelle résa depuis le BO ---
+
+function NewBookingModal({ slot, services, onClose, onSubmit }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', note: '', serviceId: '', status: 'confirmé' });
+
+  useEffect(() => {
+    if (slot) setForm({ name: '', email: '', phone: '', note: '', serviceId: services[0]?.id || '', status: 'confirmé' });
+  }, [slot]);
+
+  if (!slot) return null;
+
+  const endTime = slot.duration ? addMinutes(slot.time, slot.duration) : null;
+
+  const handleSubmit = () => {
+    if (!form.name) return;
+    onSubmit({
+      id: 'b' + Date.now(),
+      clientName: form.name,
+      clientEmail: form.email,
+      clientPhone: form.phone,
+      serviceId: form.serviceId,
+      date: slot.date,
+      time: slot.time,
+      status: form.status,
+      note: form.note,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42,42,38,0.55)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-6 fade-in" style={{ background: 'var(--cream)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h2 className="font-display text-2xl mb-1">Nouvelle réservation</h2>
+            <div className="font-mono text-sm" style={{ color: 'var(--sage-dark)' }}>
+              {new Date(slot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              {' · '}{slot.time}{endTime ? ` → ${endTime}` : ''}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:opacity-60" style={{ color: 'var(--ink-soft)' }}><X size={16} /></button>
+        </div>
+
+        <div className="space-y-3">
+          {/* Service */}
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Service</div>
+            <select value={form.serviceId} onChange={e => setForm({ ...form, serviceId: e.target.value })} className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
+              {services.map(s => <option key={s.id} value={s.id}>{s.name} — {s.priceLabel}</option>)}
+            </select>
+          </div>
+
+          {/* Client */}
+          <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Note (optionnel)" rows={2} className="w-full px-3 py-2 rounded-lg border resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+
+          {/* Statut */}
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Statut</div>
+            <div className="flex gap-2">
+              {['confirmé', 'en attente'].map(s => (
+                <button key={s} onClick={() => setForm({ ...form, status: s })} className="flex-1 py-1.5 text-xs font-mono uppercase tracking-widest rounded-full border transition-all"
+                  style={{ background: form.status === s ? 'var(--ink)' : 'transparent', color: form.status === s ? 'var(--cream)' : 'var(--ink-soft)', borderColor: form.status === s ? 'var(--ink)' : 'var(--line)' }}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mt-5 pt-4 border-t" style={{ borderColor: 'var(--line)' }}>
+          <button onClick={handleSubmit} disabled={!form.name} className="flex-1 py-2 rounded-full text-sm font-mono uppercase tracking-widest disabled:opacity-40" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+            Enregistrer
+          </button>
+          <button onClick={onClose} className="px-4 py-2 rounded-full text-sm font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+            Annuler
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1092,10 +1301,10 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
 
 function AdminServices({ services, updateServices, showToast }) {
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', duration: 60, price: 0, priceLabel: '', description: '', color: 'sage' });
+  const [form, setForm] = useState({ name: '', duration: 60, price: 0, priceLabel: '', description: '', color: 'sage', surDevis: false });
 
-  const startEdit = (s) => { setEditing(s.id); setForm(s); };
-  const startNew = () => { setEditing('new'); setForm({ name: '', duration: 60, price: 0, priceLabel: '', description: '', color: 'sage' }); };
+  const startEdit = (s) => { setEditing(s.id); setForm({ surDevis: false, ...s }); };
+  const startNew = () => { setEditing('new'); setForm({ name: '', duration: 60, price: 0, priceLabel: '', description: '', color: 'sage', surDevis: false }); };
 
   const save = () => {
     if (!form.name) { showToast("Le nom est requis"); return; }
@@ -1131,9 +1340,29 @@ function AdminServices({ services, updateServices, showToast }) {
           <h3 className="font-display text-2xl mb-4">{editing === 'new' ? 'Nouveau service' : 'Modifier le service'}</h3>
           <div className="grid md:grid-cols-2 gap-3">
             <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Nom" className="px-3 py-2 rounded-lg border md:col-span-2" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value) || 0})} placeholder="Durée (min)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <input type="number" value={form.price} onChange={e => setForm({...form, price: parseInt(e.target.value) || 0})} placeholder="Prix (€)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-            <input value={form.priceLabel} onChange={e => setForm({...form, priceLabel: e.target.value})} placeholder="Affichage du prix (ex: « À partir de 55 € »)" className="px-3 py-2 rounded-lg border md:col-span-2" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+
+            {/* Toggle Sur devis */}
+            <div className="md:col-span-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, surDevis: !form.surDevis, priceLabel: !form.surDevis ? 'Sur devis' : form.priceLabel })}
+                className="relative w-10 h-5 rounded-full transition-all flex-shrink-0"
+                style={{ background: form.surDevis ? 'var(--sage-dark)' : 'var(--line)' }}
+              >
+                <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform" style={{ transform: form.surDevis ? 'translateX(20px)' : 'none' }} />
+              </button>
+              <span className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+                Sur devis <span className="text-xs opacity-60">(pas de créneau à réserver — formulaire de demande textuelle)</span>
+              </span>
+            </div>
+
+            {!form.surDevis && (
+              <>
+                <input type="number" value={form.duration} onChange={e => setForm({...form, duration: parseInt(e.target.value) || 0})} placeholder="Durée (min)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <input type="number" value={form.price} onChange={e => setForm({...form, price: parseInt(e.target.value) || 0})} placeholder="Prix (€)" className="px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              </>
+            )}
+            <input value={form.priceLabel} onChange={e => setForm({...form, priceLabel: e.target.value})} placeholder={form.surDevis ? 'Sur devis' : 'Affichage du prix (ex: À partir de 55 €)'} className="px-3 py-2 rounded-lg border md:col-span-2" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
             <textarea value={form.description} onChange={e => setForm({...form, description: e.target.value})} placeholder="Description" rows={3} className="px-3 py-2 rounded-lg border md:col-span-2 resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
             <div className="md:col-span-2">
               <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Couleur</div>
@@ -1160,8 +1389,11 @@ function AdminServices({ services, updateServices, showToast }) {
           <div key={s.id} className="p-5 rounded-2xl flex gap-4" style={{ background: 'var(--cream)' }}>
             <div className="w-12 h-12 rounded-full flex-shrink-0" style={{ background: colorMap[s.color] }}></div>
             <div className="flex-1">
-              <div className="font-display text-xl">{s.name}</div>
-              <div className="text-xs font-mono mb-2" style={{ color: 'var(--ink-soft)' }}>{s.duration} min · {s.priceLabel}</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="font-display text-xl">{s.name}</div>
+                {s.surDevis && <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: 'var(--ochre)', color: 'var(--cream)' }}>Sur devis</span>}
+              </div>
+              <div className="text-xs font-mono mb-2" style={{ color: 'var(--ink-soft)' }}>{!s.surDevis && `${s.duration} min · `}{s.priceLabel}</div>
               <p className="text-sm mb-3" style={{ color: 'var(--ink-soft)' }}>{s.description}</p>
               <div className="flex gap-2">
                 <button onClick={() => startEdit(s)} className="text-xs font-mono uppercase tracking-widest flex items-center gap-1 hover:underline"><Edit2 size={10} /> Modifier</button>
