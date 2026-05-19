@@ -827,7 +827,7 @@ function AdminPanel({ adminPage, setAdminPage, content, updateContent, services,
         </aside>
 
         <main className="fade-in" key={adminPage}>
-          {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} services={services} showToast={showToast} />}
+          {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} showToast={showToast} />}
           {adminPage === 'services' && <AdminServices services={services} updateServices={updateServices} showToast={showToast} />}
           {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} />}
           {adminPage === 'content' && <AdminContent content={content} updateContent={updateContent} showToast={showToast} />}
@@ -848,10 +848,107 @@ function Stat({ label, value }) {
 
 // --- Admin: Planning ---
 
-function AdminPlanning({ slots, updateSlots, bookings, services, showToast }) {
+function addMinutes(timeStr, minutes) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const hh = String(Math.floor(total / 60) % 24).padStart(2, '0');
+  const mm = String(total % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+function BookingDetailModal({ booking, service, onClose, onConfirm, onCancel }) {
+  if (!booking) return null;
+  const statusColor = { 'en attente': 'var(--ochre)', 'confirmé': 'var(--sage-dark)', 'annulé': 'var(--terracotta-dark)' };
+  const endTime = service ? addMinutes(booking.time, service.duration) : null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42,42,38,0.55)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-6 fade-in" style={{ background: 'var(--cream)', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }} onClick={e => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <div className="font-display text-3xl mb-1">{booking.clientName}</div>
+            <div className="inline-flex items-center text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: statusColor[booking.status] || 'var(--line)', color: 'var(--cream)' }}>
+              {booking.status}
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-full hover:opacity-60" style={{ color: 'var(--ink-soft)' }}><X size={16} /></button>
+        </div>
+
+        {/* Time block */}
+        <div className="flex items-center gap-3 p-4 rounded-xl mb-4" style={{ background: 'var(--cream-light)' }}>
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--terracotta)' }}>
+            <Clock size={16} style={{ color: 'var(--cream)' }} />
+          </div>
+          <div>
+            <div className="font-mono text-lg font-semibold" style={{ color: 'var(--ink)' }}>
+              {booking.time}{endTime ? ` → ${endTime}` : ''}
+            </div>
+            <div className="text-xs" style={{ color: 'var(--ink-soft)' }}>
+              {booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+            </div>
+          </div>
+        </div>
+
+        {/* Service */}
+        {service && (
+          <div className="flex items-center gap-3 p-4 rounded-xl mb-4" style={{ background: 'var(--cream-light)' }}>
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'var(--sage)' }}>
+              <FileText size={16} style={{ color: 'var(--cream)' }} />
+            </div>
+            <div>
+              <div className="font-display text-lg">{service.name}</div>
+              <div className="text-xs font-mono" style={{ color: 'var(--ink-soft)' }}>{service.duration} min · {service.priceLabel}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Contact */}
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-3 text-sm">
+            <Mail size={14} style={{ color: 'var(--ink-soft)', flexShrink: 0 }} />
+            <span>{booking.clientEmail}</span>
+          </div>
+          {booking.clientPhone && (
+            <div className="flex items-center gap-3 text-sm">
+              <Phone size={14} style={{ color: 'var(--ink-soft)', flexShrink: 0 }} />
+              <span>{booking.clientPhone}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Note */}
+        {booking.note && (
+          <div className="p-4 rounded-xl mb-5 text-sm italic" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
+            « {booking.note} »
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>
+          {booking.status !== 'confirmé' && (
+            <button onClick={() => { onConfirm(booking.id); onClose(); }} className="flex-1 py-2 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+              Confirmer
+            </button>
+          )}
+          {booking.status !== 'annulé' && (
+            <button onClick={() => { onCancel(booking.id); onClose(); }} className="flex-1 py-2 rounded-full text-xs font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+              Annuler
+            </button>
+          )}
+          <button onClick={onClose} className="px-4 py-2 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
+            Fermer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services, showToast }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [newSlotDate, setNewSlotDate] = useState('');
   const [newSlotTime, setNewSlotTime] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -883,10 +980,17 @@ function AdminPlanning({ slots, updateSlots, bookings, services, showToast }) {
     updateSlots(slots.map(s => s.id === id ? { ...s, available: !s.available } : s));
   };
 
+  const setBookingStatus = (id, status) => {
+    updateBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+    showToast(`Statut mis à jour : ${status}`);
+  };
+
+  const selectedService = selectedBooking ? services.find(s => s.id === selectedBooking.serviceId) : null;
+
   return (
     <div>
       <h1 className="font-display text-4xl mb-2">Planning</h1>
-      <p className="text-sm mb-8" style={{ color: 'var(--ink-soft)' }}>Gérez vos créneaux de disponibilité. Cliquez pour activer/désactiver, ou ajoutez-en de nouveaux.</p>
+      <p className="text-sm mb-8" style={{ color: 'var(--ink-soft)' }}>Gérez vos créneaux. Cliquez sur une réservation pour voir les détails, sur un créneau libre pour l'activer/désactiver.</p>
 
       {/* Add slot */}
       <div className="p-5 rounded-2xl mb-8 grid md:grid-cols-[1fr_1fr_auto] gap-3" style={{ background: 'var(--cream)' }}>
@@ -910,34 +1014,52 @@ function AdminPlanning({ slots, updateSlots, bookings, services, showToast }) {
       <div className="grid grid-cols-7 gap-2">
         {days.map((d, i) => {
           const dateStr = d.toISOString().split('T')[0];
+          const isToday = d.toISOString().split('T')[0] === today.toISOString().split('T')[0];
           const daySlots = slots.filter(s => s.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
           return (
-            <div key={i} className="p-3 rounded-xl min-h-[200px]" style={{ background: 'var(--cream)' }}>
-              <div className="text-center mb-3 pb-2 border-b" style={{ borderColor: 'var(--line)' }}>
+            <div key={i} className="p-2 rounded-xl min-h-[200px]" style={{ background: isToday ? 'var(--sage-light)' : 'var(--cream)', border: isToday ? '1.5px solid var(--sage-dark)' : '1.5px solid transparent' }}>
+              <div className="text-center mb-2 pb-2 border-b" style={{ borderColor: 'var(--line)' }}>
                 <div className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--ink-soft)' }}>{d.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
-                <div className="font-display text-2xl">{d.getDate()}</div>
+                <div className="font-display text-xl" style={{ color: isToday ? 'var(--sage-dark)' : 'var(--ink)' }}>{d.getDate()}</div>
               </div>
               <div className="space-y-1.5">
                 {daySlots.length === 0 ? (
-                  <div className="text-[10px] text-center py-2" style={{ color: 'var(--ink-soft)' }}>aucun créneau</div>
+                  <div className="text-[10px] text-center py-2" style={{ color: 'var(--ink-soft)' }}>aucun</div>
                 ) : daySlots.map(s => {
                   const booking = bookings.find(b => b.date === s.date && b.time === s.time);
+                  const svc = booking ? services.find(sv => sv.id === booking.serviceId) : null;
+                  const endTime = svc ? addMinutes(s.time, svc.duration) : null;
+                  const statusColors = { 'confirmé': 'var(--sage-dark)', 'annulé': 'var(--terracotta-dark)', 'en attente': 'var(--ochre)' };
+                  if (booking) {
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => setSelectedBooking(booking)}
+                        className="w-full text-left rounded-lg px-2 py-1.5 transition-all hover:opacity-80 hover:shadow-md"
+                        style={{ background: statusColors[booking.status] || 'var(--terracotta)', color: 'var(--cream)' }}
+                      >
+                        <div className="font-mono text-[10px] font-semibold leading-tight">
+                          {s.time}{endTime ? ` → ${endTime}` : ''}
+                        </div>
+                        <div className="text-[10px] font-semibold truncate mt-0.5 leading-tight">{booking.clientName}</div>
+                        {svc && <div className="text-[9px] opacity-75 truncate leading-tight">{svc.name}</div>}
+                      </button>
+                    );
+                  }
                   return (
                     <div key={s.id} className="group flex items-center justify-between px-2 py-1.5 rounded-md text-xs"
                       style={{
-                        background: booking ? 'var(--terracotta)' : s.available ? 'var(--sage-light)' : 'var(--line)',
-                        color: booking ? 'var(--cream)' : 'var(--ink)',
-                        opacity: !s.available && !booking ? 0.5 : 1
+                        background: s.available ? 'rgba(168,181,160,0.25)' : 'var(--line)',
+                        color: 'var(--ink)',
+                        opacity: !s.available ? 0.5 : 1
                       }}>
-                      <button onClick={() => !booking && toggleSlot(s.id)} className="flex-1 text-left font-mono" disabled={!!booking}>
+                      <button onClick={() => toggleSlot(s.id)} className="flex-1 text-left font-mono text-[11px]">
                         {s.time}
-                        {booking && <div className="text-[9px] opacity-80 truncate">{booking.clientName}</div>}
+                        {!s.available && <div className="text-[9px] opacity-60">bloqué</div>}
                       </button>
-                      {!booking && (
-                        <button onClick={() => removeSlot(s.id)} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Trash2 size={10} />
-                        </button>
-                      )}
+                      <button onClick={() => removeSlot(s.id)} className="opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                        <Trash2 size={10} />
+                      </button>
                     </div>
                   );
                 })}
@@ -948,10 +1070,20 @@ function AdminPlanning({ slots, updateSlots, bookings, services, showToast }) {
       </div>
 
       <div className="mt-6 flex gap-4 text-xs font-mono" style={{ color: 'var(--ink-soft)' }}>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--sage-light)' }}></div> Libre</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--terracotta)' }}></div> Réservé</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'rgba(168,181,160,0.4)' }}></div> Libre</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--sage-dark)' }}></div> Confirmé</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--ochre)' }}></div> En attente</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--terracotta-dark)' }}></div> Annulé</div>
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--line)' }}></div> Bloqué</div>
       </div>
+
+      <BookingDetailModal
+        booking={selectedBooking}
+        service={selectedService}
+        onClose={() => setSelectedBooking(null)}
+        onConfirm={(id) => setBookingStatus(id, 'confirmé')}
+        onCancel={(id) => setBookingStatus(id, 'annulé')}
+      />
     </div>
   );
 }
