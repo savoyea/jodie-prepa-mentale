@@ -669,6 +669,137 @@ function Field({ label, value, onChange, multiline, help }) {
   );
 }
 
+function AboutSection({ draft, setDraft }) {
+  const formations = Array.isArray(draft.formations) ? draft.formations : [];
+  const memoires = Array.isArray(draft.memoires) ? draft.memoires : [];
+
+  const handlePhoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setDraft({ ...draft, aboutPhoto: ev.target.result });
+    reader.readAsDataURL(file);
+  };
+
+  const updateFormation = (i, field, value) => {
+    const items = [...formations];
+    items[i] = { ...items[i], [field]: value };
+    setDraft({ ...draft, formations: items });
+  };
+
+  const addFormation = () => {
+    setDraft({ ...draft, formations: [...formations, { id: 'f' + Date.now(), school: '', diploma: '', diplomaDetail: '', year: '', stages: '' }] });
+  };
+
+  const removeFormation = (i) => {
+    setDraft({ ...draft, formations: formations.filter((_, j) => j !== i) });
+  };
+
+  const updateMemoire = (i, field, value) => {
+    const items = [...memoires];
+    items[i] = { ...items[i], [field]: value };
+    setDraft({ ...draft, memoires: items });
+  };
+
+  const addMemoire = () => {
+    setDraft({ ...draft, memoires: [...memoires, { id: 'm' + Date.now(), level: '', title: '', subtitle: '' }] });
+  };
+
+  const removeMemoire = (i) => {
+    setDraft({ ...draft, memoires: memoires.filter((_, j) => j !== i) });
+  };
+
+  return (
+    <>
+      <div>
+        <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Photo de profil</div>
+        <div className="flex items-center gap-4">
+          {draft.aboutPhoto ? (
+            <img src={draft.aboutPhoto} alt="profil" className="w-20 h-20 rounded-full object-cover" style={{ border: '2px solid var(--line)' }} />
+          ) : (
+            <div className="w-20 h-20 rounded-full flex items-center justify-center text-xs" style={{ background: 'var(--sage-light)', color: 'var(--ink-soft)' }}>Sans photo</div>
+          )}
+          <div>
+            <label className="cursor-pointer px-4 py-2 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+              Choisir une photo
+              <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
+            </label>
+            {draft.aboutPhoto && (
+              <button onClick={() => setDraft({ ...draft, aboutPhoto: '' })} className="ml-3 text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--terracotta-dark)' }}>Supprimer</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <Field label="Présentation courte" value={draft.aboutShort || ''} onChange={v => setDraft({...draft, aboutShort: v})} multiline />
+
+      <div>
+        <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>Publics accompagnés (un par ligne)</div>
+        <textarea
+          value={Array.isArray(draft.aboutTargets) ? draft.aboutTargets.join('\n') : ''}
+          onChange={e => setDraft({ ...draft, aboutTargets: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+          rows={4}
+          placeholder={"Sportifs\nMilitaires\nParticuliers"}
+          className="w-full px-3 py-2 rounded-lg border resize-none"
+          style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
+        />
+      </div>
+
+      <Field label="Présentation longue" value={draft.aboutLong || ''} onChange={v => setDraft({...draft, aboutLong: v})} multiline />
+
+      <div className="pt-2">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs uppercase tracking-widest font-mono" style={{ color: 'var(--ink-soft)' }}>Formations</div>
+          <button onClick={addFormation} className="text-xs font-mono uppercase tracking-widest flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+            <Plus size={11} /> Ajouter
+          </button>
+        </div>
+        <div className="space-y-3">
+          {formations.map((f, i) => (
+            <div key={f.id || i} className="p-4 rounded-xl" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
+              <div className="flex justify-between items-start mb-3">
+                <div className="text-xs font-mono uppercase tracking-widest" style={{ color: 'var(--sage-dark)' }}>Formation {i + 1}</div>
+                <button onClick={() => removeFormation(i)} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--terracotta-dark)' }}><Trash2 size={12} /></button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <input value={f.school} onChange={e => updateFormation(i, 'school', e.target.value)} placeholder="École / Université" className="px-3 py-1.5 rounded-lg border col-span-2" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={f.diploma} onChange={e => updateFormation(i, 'diploma', e.target.value)} placeholder="Diplôme" className="px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={f.year} onChange={e => updateFormation(i, 'year', e.target.value)} placeholder="Année" className="px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={f.diplomaDetail} onChange={e => updateFormation(i, 'diplomaDetail', e.target.value)} placeholder="Détail du diplôme (optionnel)" className="px-3 py-1.5 rounded-lg border col-span-2" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+              </div>
+              <textarea value={f.stages} onChange={e => updateFormation(i, 'stages', e.target.value)} placeholder="Stages (un par ligne)" rows={2} className="w-full px-3 py-1.5 rounded-lg border resize-none" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="pt-2">
+        <div className="flex items-center justify-between mb-3">
+          <div className="text-xs uppercase tracking-widest font-mono" style={{ color: 'var(--ink-soft)' }}>Mémoires</div>
+          <button onClick={addMemoire} className="text-xs font-mono uppercase tracking-widest flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+            <Plus size={11} /> Ajouter
+          </button>
+        </div>
+        <div className="space-y-3">
+          {memoires.map((m, i) => (
+            <div key={m.id || i} className="p-4 rounded-xl" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
+              <div className="flex justify-between items-start mb-3">
+                <div className="text-xs font-mono uppercase tracking-widest" style={{ color: 'var(--sage-dark)' }}>Mémoire {i + 1}</div>
+                <button onClick={() => removeMemoire(i)} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--terracotta-dark)' }}><Trash2 size={12} /></button>
+              </div>
+              <div className="space-y-2">
+                <input value={m.level} onChange={e => updateMemoire(i, 'level', e.target.value)} placeholder="Niveau (ex: Master 1)" className="w-full px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={m.title} onChange={e => updateMemoire(i, 'title', e.target.value)} placeholder="Titre du mémoire" className="w-full px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={m.subtitle} onChange={e => updateMemoire(i, 'subtitle', e.target.value)} placeholder="Sous-titre (optionnel)" className="w-full px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 function AdminContent({ content, updateContent, showToast }) {
   const [draft, setDraft] = useState(content);
   const [section, setSection] = useState('hero');
@@ -756,10 +887,7 @@ function AdminContent({ content, updateContent, showToast }) {
           </>
         )}
         {section === 'about' && (
-          <>
-            <Field label="Présentation courte" value={draft.aboutShort} onChange={v => setDraft({...draft, aboutShort: v})} multiline />
-            <Field label="Présentation longue" value={draft.aboutLong} onChange={v => setDraft({...draft, aboutLong: v})} multiline />
-          </>
+          <AboutSection draft={draft} setDraft={setDraft} />
         )}
         {section === 'contact' && (
           <>

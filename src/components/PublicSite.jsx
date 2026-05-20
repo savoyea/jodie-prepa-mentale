@@ -291,39 +291,106 @@ function EthicsPage({ content }) {
 }
 
 function AboutPage({ content, setPage }) {
+  const targets = Array.isArray(content.aboutTargets) ? content.aboutTargets : [];
+  const formations = Array.isArray(content.formations) ? content.formations : [];
+  const memoires = Array.isArray(content.memoires) ? content.memoires : [];
+
   return (
     <div>
-      {/* Bande cramoisie avec nom */}
-      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+      {/* Hero intro */}
+      <section className="py-16 px-6" style={{ background: 'var(--cream)' }}>
         <div className="max-w-5xl mx-auto">
-          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Présentation</div>
-          <h1 className="font-display text-5xl md:text-6xl mb-2" style={{ color: 'var(--cream)' }}>Qui suis-je ?</h1>
-          <p className="font-display italic text-3xl" style={{ color: 'var(--sage)' }}>Jodie Peltier</p>
-        </div>
-      </div>
-
-      {/* Contenu */}
-      <div className="max-w-5xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-5 gap-12 items-start">
-          <div className="md:col-span-2">
-            <div className="aspect-[3/4] rounded-3xl" style={{ background: 'linear-gradient(160deg, var(--sage-dark) 0%, var(--olive) 100%)' }}>
-              <div className="w-full h-full flex items-center justify-center">
-                <img src={import.meta.env.BASE_URL + 'logo-crop.png'} alt="JOYA" style={{ width: '70%', objectFit: 'contain', opacity: 0.25 }} />
+          <div className="grid md:grid-cols-5 gap-12 items-start">
+            <div className="md:col-span-2">
+              {content.aboutPhoto ? (
+                <img src={content.aboutPhoto} alt="Jodie Peltier" className="w-full rounded-3xl object-cover" style={{ maxHeight: '480px' }} />
+              ) : (
+                <div className="aspect-[3/4] rounded-3xl" style={{ background: 'linear-gradient(160deg, var(--sage-dark) 0%, var(--olive) 100%)' }}>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img src={import.meta.env.BASE_URL + 'logo-crop.png'} alt="JOYA" style={{ width: '70%', objectFit: 'contain', opacity: 0.25 }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="md:col-span-3">
+              <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Présentation</div>
+              <h1 className="font-display text-5xl md:text-6xl mb-2">Qui suis-je ?</h1>
+              <p className="font-display italic text-2xl mb-6" style={{ color: 'var(--sage-dark)' }}>Jodie Peltier</p>
+              <div className="p-6 rounded-2xl mb-5" style={{ background: 'var(--sage-light)', borderLeft: '4px solid var(--sage-dark)' }}>
+                <p className="text-base leading-relaxed font-medium" style={{ color: 'var(--ink)' }}>{content.aboutShort}</p>
               </div>
+              {targets.length > 0 && (
+                <div className="mb-5">
+                  <div className="text-xs uppercase tracking-widest font-mono mb-3" style={{ color: 'var(--ink-soft)' }}>J'accompagne :</div>
+                  <div className="flex flex-wrap gap-2">
+                    {targets.map((t, i) => (
+                      <span key={i} className="px-4 py-1.5 rounded-full text-sm font-mono" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--ink-soft)' }}>{content.aboutLong}</p>
+              <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                Réserver un appel découverte
+              </button>
             </div>
-          </div>
-          <div className="md:col-span-3">
-            {/* Encart blush */}
-            <div className="p-6 rounded-2xl mb-6" style={{ background: 'var(--sage-light)', borderLeft: '4px solid var(--sage-dark)' }}>
-              <p className="text-base leading-relaxed font-medium" style={{ color: 'var(--ink)' }}>{content.aboutShort}</p>
-            </div>
-            <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--ink-soft)' }}>{content.aboutLong}</p>
-            <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
-              Réserver un appel découverte
-            </button>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* Formations */}
+      {formations.length > 0 && (
+        <section className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-xs uppercase tracking-[0.3em] mb-3 font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>● Parcours académique</div>
+            <h2 className="font-display text-4xl md:text-5xl mb-10" style={{ color: 'var(--cream)' }}>Formations</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {formations.map((f, i) => (
+                <div key={f.id || i} className="p-6 rounded-2xl" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                  <div className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.year}</div>
+                  <div className="font-display text-xl mb-1" style={{ color: 'var(--cream)' }}>{f.school}</div>
+                  <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.85)' }}>{f.diploma}</div>
+                  {f.diplomaDetail && (
+                    <div className="text-xs italic mb-3" style={{ color: 'rgba(255,255,255,0.6)' }}>{f.diplomaDetail}</div>
+                  )}
+                  {f.stages && (
+                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                      <div className="text-[10px] uppercase tracking-widest font-mono mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stages</div>
+                      {f.stages.split('\n').map((s, j) => (
+                        <div key={j} className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>— {s}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Mémoires */}
+      {memoires.length > 0 && (
+        <section className="py-16 px-6" style={{ background: 'var(--cream-light)' }}>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-xs uppercase tracking-[0.3em] mb-3 font-mono" style={{ color: 'var(--sage-dark)' }}>● Recherche</div>
+            <h2 className="font-display text-4xl md:text-5xl mb-10">Mémoires</h2>
+            <div className="space-y-4">
+              {memoires.map((m, i) => (
+                <div key={m.id || i} className="p-6 rounded-2xl flex gap-6 items-start" style={{ background: 'var(--cream)', border: '1px solid var(--line)' }}>
+                  <div className="flex-shrink-0 w-20 text-center">
+                    <div className="font-mono text-[10px] uppercase tracking-widest mb-1" style={{ color: 'var(--ink-soft)' }}>Niveau</div>
+                    <div className="text-xs font-display" style={{ color: 'var(--sage-dark)' }}>{m.level}</div>
+                  </div>
+                  <div style={{ borderLeft: '2px solid var(--sage-dark)', paddingLeft: '1.5rem' }}>
+                    <div className="font-display text-lg mb-1">{m.title}</div>
+                    {m.subtitle && <div className="text-sm italic" style={{ color: 'var(--ink-soft)' }}>{m.subtitle}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }
