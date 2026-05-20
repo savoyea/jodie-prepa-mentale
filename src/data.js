@@ -57,6 +57,8 @@ export const DEFAULT_CONTENT = {
     { title: "Particuliers", text: "Pour traverser une période de changement, reprendre confiance, ou retrouver du sens et de l'élan." },
     { title: "Entreprises", text: "Interventions de groupe pour cohésion d'équipe, gestion du stress et bien-être au travail." }
   ],
+  ethicsImage: '',
+  ethicsSchema: '',
   ethicsTitle: "Éthique et déontologie",
   ethicsText: "Mon accompagnement repose sur un cadre clair et respectueux. La préparation mentale n'est ni de la psychothérapie ni du coaching de vie : elle s'inscrit dans une démarche complémentaire et orientée vers l'objectif.",
   ethicsPrinciples: [

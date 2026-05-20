@@ -348,31 +348,61 @@ function WhatIsPage({ content, setPage }) {
 }
 
 function EthicsPage({ content }) {
+  const ethicsImg = content.ethicsImage || (import.meta.env.BASE_URL + 'ethics-photo.png');
+  const schemaImg = content.ethicsSchema || (import.meta.env.BASE_URL + 'ethics-schema.png');
+
   return (
     <div>
-      {/* Header blush */}
-      <div className="py-16 px-6" style={{ background: 'var(--sage-light)' }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Cadre</div>
-          <h1 className="font-display text-5xl md:text-6xl mb-6" style={{ color: 'var(--ink)' }}>{content.ethicsTitle}</h1>
-          <p className="text-lg leading-relaxed max-w-2xl" style={{ color: 'var(--ink-soft)' }}>{content.ethicsText}</p>
+      {/* Header */}
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Cadre</div>
+          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>{content.ethicsTitle}</h1>
         </div>
       </div>
 
-      {/* Principes */}
-      <div className="px-6 py-16">
-        <div className="max-w-4xl mx-auto space-y-3 stagger">
-          {content.ethicsPrinciples.map((p, i) => (
-            <div key={i} className="flex gap-0 rounded-2xl overflow-hidden" style={{ border: '1.5px solid var(--line)' }}>
-              <div className="flex items-center justify-center px-6 py-6 flex-shrink-0 w-20" style={{ background: 'var(--sage-dark)' }}>
-                <span className="font-display text-3xl font-light" style={{ color: 'var(--cream)' }}>0{i+1}</span>
-              </div>
-              <div className="p-6" style={{ background: 'var(--cream)' }}>
-                <h3 className="font-display text-2xl mb-1">{p.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{p.text}</p>
-              </div>
+      {/* Corps — texte gauche, image droite */}
+      <div className="px-6 py-16" style={{ background: 'var(--cream)' }}>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-start">
+          {/* Texte */}
+          <div>
+            <p className="text-base leading-relaxed mb-10" style={{ color: 'var(--ink-soft)' }}>{content.ethicsText}</p>
+            <div className="space-y-3 stagger">
+              {content.ethicsPrinciples.map((p, i) => (
+                <div key={i} className="flex gap-0 rounded-2xl overflow-hidden" style={{ border: '1.5px solid var(--line)' }}>
+                  <div className="flex items-center justify-center px-5 py-5 flex-shrink-0 w-16" style={{ background: 'var(--sage-dark)' }}>
+                    <span className="font-display text-2xl font-light" style={{ color: 'var(--cream)' }}>0{i+1}</span>
+                  </div>
+                  <div className="p-5" style={{ background: 'var(--cream-light)' }}>
+                    <h3 className="font-display text-xl mb-1">{p.title}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{p.text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          {/* Image charte */}
+          <div className="md:sticky md:top-24">
+            <img
+              src={ethicsImg}
+              alt="Charte éthique"
+              className="w-full rounded-2xl shadow-lg object-contain"
+              style={{ border: '1px solid var(--line)' }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Schéma pleine largeur */}
+      <div className="px-6 pb-16" style={{ background: 'var(--cream)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-6 font-mono" style={{ color: 'var(--sage-dark)' }}>● Schéma déontologique</div>
+          <img
+            src={schemaImg}
+            alt="Schéma déontologique"
+            className="w-full rounded-2xl shadow-md object-contain"
+            style={{ border: '1px solid var(--line)', background: '#fff' }}
+          />
         </div>
       </div>
     </div>

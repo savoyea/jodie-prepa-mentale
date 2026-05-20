@@ -1102,6 +1102,22 @@ function AdminContent({ content, updateContent, showToast }) {
                 <Field label="Description" value={p.text} onChange={v => updatePrinciple(i, 'text', v)} multiline />
               </div>
             ))}
+            <div className="pt-4 space-y-4">
+              <ImageUpload
+                label="Image charte (droite)"
+                value={draft.ethicsImage || ''}
+                onChange={v => setDraft({...draft, ethicsImage: v})}
+                preview="hero"
+                help="Document ou visuel affiché à droite du texte. Par défaut : charte SFPS."
+              />
+              <ImageUpload
+                label="Schéma déontologique"
+                value={draft.ethicsSchema || ''}
+                onChange={v => setDraft({...draft, ethicsSchema: v})}
+                preview="hero"
+                help="Schéma pleine largeur affiché en bas de page. Par défaut : schéma Individu / Confidentialité / Consentement."
+              />
+            </div>
           </>
         )}
         {section === 'about' && (
