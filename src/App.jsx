@@ -133,7 +133,7 @@ export default function App() {
 
       <div className="font-body" style={{ background: 'var(--cream)', color: 'var(--ink)', minHeight: '100vh' }}>
         {/* Top switcher */}
-        <div className="fixed top-3 right-3 z-50 flex gap-2">
+        <div className="fixed bottom-4 right-4 md:bottom-auto md:top-3 md:right-3 z-50 flex gap-2">
           {view === 'admin' && adminAuth && (
             <button
               onClick={() => { setAdminAuth(false); setView('public'); }}
