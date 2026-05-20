@@ -64,8 +64,8 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'what' && <WhatIsPage content={content} setPage={setPage} />}
         {page === 'ethics' && <EthicsPage content={content} />}
         {page === 'about' && <AboutPage content={content} setPage={setPage} />}
-        {page === 'services' && <ServicesPage content={content} services={services} setPage={setPage} />}
-        {page === 'contact' && <ContactPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} showToast={showToast} />}
+        {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} showToast={showToast} setPage={setPage} />}
+        {page === 'contact' && <ContactPage content={content} setPage={setPage} showToast={showToast} />}
       </main>
 
       {/* Footer cramoisie */}
@@ -524,71 +524,32 @@ function AboutPage({ content, setPage }) {
   );
 }
 
-function ServicesPage({ content, services, setPage }) {
-  return (
-    <div>
-      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Prestations</div>
-          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>Mes services</h1>
-        </div>
-      </div>
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-2 gap-6 stagger">
-          {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => setPage('contact')} />)}
-        </div>
-        <div className="mt-16 p-10 rounded-2xl text-center" style={{ background: 'var(--sage-dark)' }}>
-          <p className="font-display italic text-2xl mb-6" style={{ color: 'var(--cream)' }}>Vous avez une question ? Je suis là.</p>
-          <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--cream)', color: 'var(--sage-dark)' }}>
-            Me contacter
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ContactPage({ content, services, slots, bookings, updateBookings, updateSlots, showToast }) {
-  const [step, setStep] = useState(1);
+function ServicesPage({ content, services, slots, bookings, updateBookings, updateSlots, showToast, setPage }) {
+  const [step, setStep] = useState(0); // 0 = liste, 1 = créneau, 2 = form, 3 = confirmation
   const [selectedService, setSelectedService] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '', besoin: '' });
   const [weekOffset, setWeekOffset] = useState(0);
 
   const isSurDevis = selectedService?.surDevis;
-
   const availableSlots = slots.filter(s => s.available);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const weekStart = new Date(today);
   weekStart.setDate(today.getDate() + weekOffset * 7);
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(weekStart); d.setDate(weekStart.getDate() + i); return d; });
 
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart);
-    d.setDate(weekStart.getDate() + i);
-    days.push(d);
-  }
-
-  const selectService = (s) => {
+  const startBooking = (s) => {
     setSelectedService(s);
-    setStep(s.surDevis ? 3 : 2);
+    setSelectedSlot(null);
+    setForm({ name: '', email: '', phone: '', note: '', besoin: '' });
+    setWeekOffset(0);
+    setStep(s.surDevis ? 2 : 1);
   };
 
   const submitBooking = () => {
     if (!form.name || !form.email) { showToast("Veuillez renseigner votre nom et email"); return; }
     if (isSurDevis && !form.besoin) { showToast("Veuillez décrire votre besoin"); return; }
-    const newBooking = {
-      id: 'b' + Date.now(),
-      clientName: form.name,
-      clientEmail: form.email,
-      clientPhone: form.phone,
-      serviceId: selectedService.id,
-      date: selectedSlot?.date || '',
-      time: selectedSlot?.time || '',
-      status: 'en attente',
-      note: isSurDevis ? form.besoin : form.note,
-    };
+    const newBooking = { id: 'b' + Date.now(), clientName: form.name, clientEmail: form.email, clientPhone: form.phone, serviceId: selectedService.id, date: selectedSlot?.date || '', time: selectedSlot?.time || '', status: 'en attente', note: isSurDevis ? form.besoin : form.note };
     updateBookings([...bookings, newBooking]);
     if (selectedSlot) {
       const updatedSlots = slots.map(s => s.id === selectedSlot.id ? { ...s, available: false } : s);
@@ -596,175 +557,241 @@ function ContactPage({ content, services, slots, bookings, updateBookings, updat
       if (remaining > 0) {
         const newTime = addMinutes(selectedSlot.time, selectedService.duration);
         const newId = `${selectedSlot.date}-${newTime}`;
-        if (!updatedSlots.find(s => s.id === newId)) {
-          updatedSlots.push({ id: newId, date: selectedSlot.date, time: newTime, duration: remaining, available: true });
-        }
+        if (!updatedSlots.find(s => s.id === newId)) updatedSlots.push({ id: newId, date: selectedSlot.date, time: newTime, duration: remaining, available: true });
       }
       updateSlots(updatedSlots);
     }
-    setStep(4);
+    setStep(3);
     showToast(isSurDevis ? "Demande de devis envoyée !" : "Réservation enregistrée !");
   };
 
-  const stepperLabels = isSurDevis
-    ? ['Service', 'Votre besoin', 'Confirmé']
-    : ['Service', 'Créneau', 'Vos infos', 'Confirmé'];
-
-  const displayStep = isSurDevis && step >= 3 ? step - 1 : step;
+  const reset = () => { setStep(0); setSelectedService(null); setSelectedSlot(null); setForm({ name: '', email: '', phone: '', note: '', besoin: '' }); };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16">
-      <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Réservation</div>
-      <h1 className="font-display text-5xl md:text-6xl mb-12">Prenons rendez-vous</h1>
-
-      {/* Stepper */}
-      <div className="flex items-center gap-2 mb-10 text-xs font-mono uppercase tracking-widest">
-        {stepperLabels.map((label, i) => (
-          <React.Fragment key={i}>
-            <div className="flex items-center gap-2" style={{ color: displayStep > i + 1 ? 'var(--terracotta-dark)' : displayStep === i + 1 ? 'var(--ink)' : 'var(--ink-soft)', opacity: displayStep >= i + 1 ? 1 : 0.4 }}>
-              <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: displayStep > i + 1 ? 'var(--sage-dark)' : displayStep === i + 1 ? 'var(--ink)' : 'transparent', color: displayStep >= i + 1 ? 'var(--cream)' : 'inherit', border: displayStep <= i + 1 ? '1px solid currentColor' : 'none' }}>
-                {displayStep > i + 1 ? <Check size={12} /> : i + 1}
-              </div>
-              <span className="hidden md:inline">{label}</span>
-            </div>
-            {i < stepperLabels.length - 1 && <div className="flex-1 h-px" style={{ background: 'var(--line)' }} />}
-          </React.Fragment>
-        ))}
+    <div>
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Prestations</div>
+          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>Mes services</h1>
+        </div>
       </div>
 
-      {step === 1 && (
-        <div className="fade-in">
-          <h2 className="font-display text-3xl mb-6">Quel service vous intéresse ?</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            {services.map(s => (
-              <button key={s.id} onClick={() => selectService(s)} className="text-left p-6 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-md" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
-                <div className="flex items-start justify-between mb-1 gap-2">
-                  <h3 className="font-display text-2xl">{s.name}</h3>
-                  {s.surDevis && <span className="text-[9px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full flex-shrink-0 mt-1" style={{ background: 'var(--ochre)', color: 'var(--cream)' }}>Sur devis</span>}
-                </div>
-                <div className="flex gap-3 text-xs font-mono mb-2" style={{ color: 'var(--ink-soft)' }}>
-                  {!s.surDevis && <span>{s.duration} min · </span>}<span>{s.priceLabel}</span>
-                </div>
-                <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{s.description}</p>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {step === 2 && !isSurDevis && (
-        <div className="fade-in">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display text-3xl">Choisissez un créneau</h2>
-            <div className="flex items-center gap-2">
-              <button onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))} disabled={weekOffset === 0} className="p-2 rounded-full border disabled:opacity-30" style={{ borderColor: 'var(--line)' }}><ChevronLeft size={14} /></button>
-              <span className="text-xs font-mono uppercase tracking-widest px-2">Sem. {weekOffset + 1}</span>
-              <button onClick={() => setWeekOffset(weekOffset + 1)} className="p-2 rounded-full border" style={{ borderColor: 'var(--line)' }}><ChevronRight size={14} /></button>
+      <div className="max-w-5xl mx-auto px-6 py-16">
+        {/* Liste des services */}
+        {step === 0 && (
+          <div className="fade-in">
+            <div className="grid md:grid-cols-2 gap-6 mb-16">
+              {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => startBooking(s)} />)}
+            </div>
+            <div className="p-10 rounded-2xl text-center" style={{ background: 'var(--sage-dark)' }}>
+              <p className="font-display italic text-2xl mb-6" style={{ color: 'var(--cream)' }}>Vous avez une question ? Je suis là.</p>
+              <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--cream)', color: 'var(--sage-dark)' }}>Me contacter</button>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-7 gap-2 mb-6">
-            {days.map((d, i) => {
-              const dateStr = toLocalDateStr(d);
-              const daySlots = availableSlots.filter(s => s.date === dateStr);
-              const isPast = d < today;
-              return (
-                <div key={i} className="p-3 rounded-xl text-center" style={{ background: isPast ? 'transparent' : 'var(--cream-light)', opacity: isPast ? 0.3 : 1 }}>
-                  <div className="text-xs uppercase tracking-widest" style={{ color: 'var(--ink-soft)' }}>{d.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
-                  <div className="font-display text-2xl my-1">{d.getDate()}</div>
-                  <div className="text-[10px] uppercase font-mono" style={{ color: 'var(--ink-soft)' }}>{d.toLocaleDateString('fr-FR', { month: 'short' })}</div>
-                  <div className="mt-2 space-y-1">
-                    {daySlots.length === 0 ? (
-                      <div className="text-[10px]" style={{ color: 'var(--ink-soft)' }}>—</div>
-                    ) : daySlots.map(s => (
-                      <button key={s.id} onClick={() => { setSelectedSlot(s); setStep(3); }} className="w-full py-1 text-xs rounded-md transition-all hover:opacity-80" style={{ background: 'var(--sage)', color: 'var(--cream)' }}>
-                        {s.time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <button onClick={() => setStep(1)} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>← Retour</button>
-        </div>
-      )}
+        )}
 
-      {step === 3 && (
-        <div className="fade-in max-w-2xl">
-          {isSurDevis ? (
-            <>
-              <h2 className="font-display text-3xl mb-2">Décrivez votre besoin</h2>
-              <div className="text-sm mb-6 font-mono" style={{ color: 'var(--ink-soft)' }}>{selectedService.name} — Sur devis</div>
-              <div className="space-y-3">
-                <textarea
-                  value={form.besoin}
-                  onChange={e => setForm({ ...form, besoin: e.target.value })}
-                  placeholder="Décrivez votre projet, contexte, nombre de personnes, objectifs… *"
-                  rows={5}
-                  className="w-full px-4 py-3 rounded-lg border outline-none resize-none"
-                  style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
-                />
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(1)} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>← Retour</button>
-                  <button onClick={submitBooking} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono flex-1" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>Envoyer la demande</button>
-                </div>
+        {/* Étape 1 — Créneau */}
+        {step === 1 && (
+          <div className="fade-in">
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={reset} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>← Retour</button>
+              <span className="text-xs font-mono" style={{ color: 'var(--ink-soft)' }}>·</span>
+              <span className="font-display text-lg">{selectedService?.name}</span>
+            </div>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-3xl">Choisissez un créneau</h2>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setWeekOffset(Math.max(0, weekOffset - 1))} disabled={weekOffset === 0} className="p-2 rounded-full border disabled:opacity-30" style={{ borderColor: 'var(--line)' }}><ChevronLeft size={14} /></button>
+                <span className="text-xs font-mono uppercase tracking-widest px-2">Sem. {weekOffset + 1}</span>
+                <button onClick={() => setWeekOffset(weekOffset + 1)} className="p-2 rounded-full border" style={{ borderColor: 'var(--line)' }}><ChevronRight size={14} /></button>
               </div>
-            </>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-7 gap-2 mb-6">
+              {days.map((d, i) => {
+                const dateStr = toLocalDateStr(d);
+                const daySlots = availableSlots.filter(s => s.date === dateStr);
+                const isPast = d < today;
+                return (
+                  <div key={i} className="p-3 rounded-xl text-center" style={{ background: isPast ? 'transparent' : 'var(--cream-light)', opacity: isPast ? 0.3 : 1 }}>
+                    <div className="text-xs uppercase tracking-widest" style={{ color: 'var(--ink-soft)' }}>{d.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
+                    <div className="font-display text-2xl my-1">{d.getDate()}</div>
+                    <div className="text-[10px] uppercase font-mono" style={{ color: 'var(--ink-soft)' }}>{d.toLocaleDateString('fr-FR', { month: 'short' })}</div>
+                    <div className="mt-2 space-y-1">
+                      {daySlots.length === 0 ? <div className="text-[10px]" style={{ color: 'var(--ink-soft)' }}>—</div>
+                        : daySlots.map(s => (
+                          <button key={s.id} onClick={() => { setSelectedSlot(s); setStep(2); }} className="w-full py-1 text-xs rounded-md transition-all hover:opacity-80" style={{ background: 'var(--sage)', color: 'var(--cream)' }}>{s.time}</button>
+                        ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Étape 2 — Formulaire */}
+        {step === 2 && (
+          <div className="fade-in max-w-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <button onClick={() => setStep(isSurDevis ? 0 : 1)} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>← Retour</button>
+              <span className="text-xs font-mono" style={{ color: 'var(--ink-soft)' }}>·</span>
+              <span className="font-display text-lg">{selectedService?.name}{!isSurDevis && selectedSlot && ` · ${new Date(selectedSlot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${selectedSlot.time}`}</span>
+            </div>
+            <h2 className="font-display text-3xl mb-6">{isSurDevis ? 'Décrivez votre besoin' : 'Vos coordonnées'}</h2>
+            <div className="space-y-3">
+              {isSurDevis && (
+                <textarea value={form.besoin} onChange={e => setForm({ ...form, besoin: e.target.value })} placeholder="Décrivez votre projet, contexte, nombre de personnes, objectifs… *" rows={5} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              )}
+              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              {!isSurDevis && <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Un message (optionnel)" rows={3} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />}
+              <button onClick={submitBooking} className="w-full px-6 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+                {isSurDevis ? 'Envoyer la demande' : 'Confirmer la réservation'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Étape 3 — Confirmation */}
+        {step === 3 && (
+          <div className="fade-in text-center py-12">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{ background: 'var(--sage-light)' }}>
+              <Check size={28} style={{ color: 'var(--sage-dark)' }} />
+            </div>
+            <h2 className="font-display text-4xl mb-4">Demande envoyée</h2>
+            <p className="text-base max-w-md mx-auto mb-8" style={{ color: 'var(--ink-soft)' }}>
+              {isSurDevis
+                ? `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour vous proposer un devis personnalisé.`
+                : `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour confirmer notre rendez-vous.`}
+            </p>
+            <button onClick={reset} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>Voir tous les services</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ContactPage({ content, setPage, showToast }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = () => {
+    if (!form.name || !form.email || !form.message) {
+      showToast("Veuillez renseigner votre nom, email et message");
+      return;
+    }
+    setSent(true);
+    showToast("Message envoyé !");
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Contact</div>
+          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>Écrivez-moi</h1>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-6 py-16 grid md:grid-cols-[1fr_340px] gap-14 items-start">
+        {/* Formulaire */}
+        <div>
+          {sent ? (
+            <div className="fade-in text-center py-16">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{ background: 'var(--sage-light)' }}>
+                <Check size={28} style={{ color: 'var(--sage-dark)' }} />
+              </div>
+              <h2 className="font-display text-4xl mb-4">Message envoyé !</h2>
+              <p className="text-base max-w-sm mx-auto mb-8" style={{ color: 'var(--ink-soft)' }}>
+                Merci {form.name.split(' ')[0]} ! Je vous réponds dans les plus brefs délais.
+              </p>
+              <button onClick={() => { setSent(false); setForm({ name: '', email: '', phone: '', subject: '', message: '' }); }} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>
+                Envoyer un autre message
+              </button>
+            </div>
           ) : (
-            <>
-              <h2 className="font-display text-3xl mb-2">Vos coordonnées</h2>
-              <div className="text-sm mb-6 font-mono" style={{ color: 'var(--ink-soft)' }}>
-                {selectedService.name} · {selectedSlot && new Date(selectedSlot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à {selectedSlot?.time}
-              </div>
-              <div className="space-y-3">
-                <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Un message (optionnel)" rows={3} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-                <div className="flex gap-3">
-                  <button onClick={() => setStep(2)} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>← Retour</button>
-                  <button onClick={submitBooking} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono flex-1" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>Confirmer</button>
+            <div className="space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Prénom & Nom *</label>
+                  <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Marie Dupont" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Email *</label>
+                  <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="marie@exemple.fr" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
                 </div>
               </div>
-            </>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Téléphone</label>
+                  <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="06 00 00 00 00" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                </div>
+                <div>
+                  <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Sujet</label>
+                  <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="Demande d'information…" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Message *</label>
+                <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Dites-moi ce qui vous amène…" rows={6} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              </div>
+              <div className="flex items-center gap-4 pt-2">
+                <button onClick={handleSubmit} className="px-8 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                  Envoyer le message
+                </button>
+                <span className="text-xs" style={{ color: 'var(--ink-soft)' }}>* champs obligatoires</span>
+              </div>
+            </div>
           )}
         </div>
-      )}
 
-      {step === 4 && (
-        <div className="fade-in text-center py-12">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full mb-6" style={{ background: 'var(--sage-light)' }}>
-            <Check size={28} style={{ color: 'var(--sage-dark)' }} />
+        {/* Coordonnées */}
+        <div className="space-y-6 md:sticky md:top-24">
+          <div className="p-6 rounded-2xl space-y-5" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
+            <div className="text-xs uppercase tracking-[0.3em] font-mono mb-4" style={{ color: 'var(--sage-dark)' }}>● Coordonnées</div>
+            {content.contactPhone && (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--sage-dark)' }}>
+                  <Phone size={14} style={{ color: 'var(--cream)' }} />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-widest font-mono mb-0.5" style={{ color: 'var(--ink-soft)' }}>Téléphone</div>
+                  <a href={`tel:${content.contactPhone.replace(/\s/g, '')}`} className="font-display text-lg hover:opacity-70 transition-opacity">{content.contactPhone}</a>
+                </div>
+              </div>
+            )}
+            {content.contactEmail && (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--sage-dark)' }}>
+                  <Mail size={14} style={{ color: 'var(--cream)' }} />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-widest font-mono mb-0.5" style={{ color: 'var(--ink-soft)' }}>Email</div>
+                  <a href={`mailto:${content.contactEmail}`} className="font-display text-base break-all hover:opacity-70 transition-opacity">{content.contactEmail}</a>
+                </div>
+              </div>
+            )}
+            {content.contactLocation && (
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: 'var(--sage-dark)' }}>
+                  <MapPin size={14} style={{ color: 'var(--cream)' }} />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-widest font-mono mb-0.5" style={{ color: 'var(--ink-soft)' }}>Lieu</div>
+                  <div className="font-display text-base">{content.contactLocation}</div>
+                </div>
+              </div>
+            )}
           </div>
-          <h2 className="font-display text-4xl mb-4">Demande envoyée</h2>
-          <p className="text-base max-w-md mx-auto mb-6" style={{ color: 'var(--ink-soft)' }}>
-            {isSurDevis
-              ? `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour vous proposer un devis personnalisé.`
-              : `Merci ${form.name.split(' ')[0]} ! Je reviens vers vous très vite pour confirmer notre rendez-vous du ${selectedSlot && new Date(selectedSlot.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} à ${selectedSlot?.time}.`
-            }
-          </p>
-          <button onClick={() => { setStep(1); setSelectedService(null); setSelectedSlot(null); setForm({ name: '', email: '', phone: '', note: '', besoin: '' }); }} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>
-            Nouvelle réservation
-          </button>
-        </div>
-      )}
-
-      {/* Direct contact */}
-      <div className="mt-20 pt-10 border-t grid md:grid-cols-3 gap-6" style={{ borderColor: 'var(--line)' }}>
-        <div>
-          <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Téléphone</div>
-          <div className="font-display text-xl">{content.contactPhone}</div>
-        </div>
-        <div>
-          <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Email</div>
-          <div className="font-display text-xl break-all">{content.contactEmail}</div>
-        </div>
-        <div>
-          <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>Lieu</div>
-          <div className="font-display text-xl">{content.contactLocation}</div>
+          <div className="p-6 rounded-2xl text-center" style={{ background: 'var(--sage-dark)' }}>
+            <p className="text-sm mb-4" style={{ color: 'rgba(255,255,255,0.8)' }}>Vous souhaitez réserver une séance directement ?</p>
+            <button onClick={() => setPage('services')} className="px-6 py-2.5 rounded-full text-xs uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--cream)', color: 'var(--sage-dark)' }}>
+              Voir les services
+            </button>
+          </div>
         </div>
       </div>
     </div>
