@@ -15,7 +15,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
   return (
     <div>
       {/* Navigation */}
-      <nav className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'rgba(252, 247, 248, 0.90)', borderColor: 'var(--line)' }}>
+      <nav className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'rgba(255, 255, 255, 0.95)', borderColor: 'var(--line)' }}>
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <button onClick={() => setPage('home')} className="flex items-center">
             <img
