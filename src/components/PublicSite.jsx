@@ -3,7 +3,7 @@ import { Menu, X, Phone, Mail, MapPin, Clock, Euro, Heart, Compass, Users, Chevr
 import { toLocalDateStr, addMinutes } from '../utils.js';
 import { sendEmail, fillTemplate } from '../lib/email.js';
 
-export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, appSettings, menuOpen, setMenuOpen, showToast }) {
+export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, contacts, updateContacts, appSettings, menuOpen, setMenuOpen, showToast }) {
   const navItems = [
     { id: 'home', label: 'Accueil' },
     { id: 'what', label: "C'est quoi ?" },
@@ -66,7 +66,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'ethics' && <EthicsPage content={content} />}
         {page === 'about' && <AboutPage content={content} setPage={setPage} />}
         {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} appSettings={appSettings} showToast={showToast} setPage={setPage} />}
-        {page === 'contact' && <ContactPage content={content} appSettings={appSettings} setPage={setPage} showToast={showToast} />}
+        {page === 'contact' && <ContactPage content={content} appSettings={appSettings} contacts={contacts} updateContacts={updateContacts} setPage={setPage} showToast={showToast} />}
         {page === 'legal-mentions' && <LegalPage title="Mentions légales" html={content.legalMentions} setPage={setPage} />}
         {page === 'legal-cookies' && <LegalPage title="Politique cookies" html={content.legalCookies} setPage={setPage} />}
         {page === 'legal-privacy' && <LegalPage title="Politique de confidentialité" html={content.legalPrivacy} setPage={setPage} />}
@@ -872,7 +872,7 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
   );
 }
 
-function ContactPage({ content, appSettings, setPage, showToast }) {
+function ContactPage({ content, appSettings, contacts, updateContacts, setPage, showToast }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
@@ -883,6 +883,19 @@ function ContactPage({ content, appSettings, setPage, showToast }) {
       return;
     }
     setSending(true);
+    // Sauvegarder le contact
+    const newContact = {
+      id: 'c' + Date.now(),
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      subject: form.subject,
+      message: form.message,
+      date: new Date().toISOString(),
+      read: false,
+    };
+    updateContacts([...(contacts || []), newContact]);
+    // Envoyer l'email de notification à Jodie
     if (content.contactEmail) {
       await sendEmail({
         to: content.contactEmail,

@@ -13,6 +13,7 @@ export default function App() {
   const [services, setServices] = useState(DEFAULT_SERVICES);
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState(DEFAULT_BOOKINGS);
+  const [contacts, setContacts] = useState([]);
   const [appSettings, setAppSettings] = useState(DEFAULT_APP_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function App() {
       const c = await storage.get('content', DEFAULT_CONTENT);
       const s = await storage.get('services', DEFAULT_SERVICES);
       const b = await storage.get('bookings', DEFAULT_BOOKINGS);
+      const ct = await storage.get('contacts', []);
       const as = await storage.get('appSettings', DEFAULT_APP_SETTINGS);
       const slVersion = await storage.get('slotsVersion', 1);
       let sl = slVersion >= SLOTS_VERSION ? await storage.get('slots', null) : null;
@@ -39,7 +41,9 @@ export default function App() {
       setServices(s);
       setSlots(sl);
       setBookings(b);
-      setAppSettings(as);
+      setContacts(ct);
+      // Merge avec les defaults pour que les nouveaux champs soient toujours présents
+      setAppSettings({ ...DEFAULT_APP_SETTINGS, ...as });
       setLoaded(true);
     })();
   }, []);
@@ -64,6 +68,7 @@ export default function App() {
   const updateServices = (s) => { setServices(s); storage.set('services', s); };
   const updateSlots = (s) => { setSlots(s); storage.set('slots', s); };
   const updateBookings = (b) => { setBookings(b); storage.set('bookings', b); };
+  const updateContacts = (ct) => { setContacts(ct); storage.set('contacts', ct); };
   const updateAppSettings = (as) => { setAppSettings(as); storage.set('appSettings', as); };
 
   const exportAllToSupabase = async () => {
@@ -72,6 +77,8 @@ export default function App() {
       storage.set('services', services),
       storage.set('slots', slots),
       storage.set('bookings', bookings),
+      storage.set('contacts', contacts),
+      storage.set('appSettings', appSettings),
       storage.set('slotsVersion', SLOTS_VERSION),
     ]);
     showToast("Toutes les données exportées vers Supabase ✓");
@@ -111,7 +118,7 @@ export default function App() {
         .grain::before {
           content: '';
           position: absolute; inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2020/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
           pointer-events: none;
           mix-blend-mode: multiply;
         }
@@ -170,6 +177,7 @@ export default function App() {
             content={content} services={services} slots={slots}
             bookings={bookings} updateBookings={updateBookings}
             updateSlots={updateSlots}
+            contacts={contacts} updateContacts={updateContacts}
             appSettings={appSettings}
             menuOpen={menuOpen} setMenuOpen={setMenuOpen}
             showToast={showToast}
@@ -181,6 +189,7 @@ export default function App() {
             services={services} updateServices={updateServices}
             slots={slots} updateSlots={updateSlots}
             bookings={bookings} updateBookings={updateBookings}
+            contacts={contacts} updateContacts={updateContacts}
             appSettings={appSettings} updateAppSettings={updateAppSettings}
             showToast={showToast}
             onExportAll={exportAllToSupabase}

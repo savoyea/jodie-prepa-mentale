@@ -4,11 +4,13 @@ import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
 import { isSupabaseConfigured } from '../lib/supabase.js';
 import { sendEmail, fillTemplate } from '../lib/email.js';
 
-export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, appSettings, updateAppSettings, showToast, onExportAll }) {
+export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, contacts, updateContacts, appSettings, updateAppSettings, showToast, onExportAll }) {
+  const unreadContacts = (contacts || []).filter(c => !c.read).length;
   const menu = [
     { id: 'planning', label: 'Planning', icon: <Calendar size={16} /> },
     { id: 'services', label: 'Services', icon: <Settings size={16} /> },
     { id: 'bookings', label: 'Réservations', icon: <Users size={16} /> },
+    { id: 'messages', label: 'Messages', icon: <Mail size={16} />, badge: unreadContacts },
     { id: 'content', label: 'Contenu du site', icon: <FileText size={16} /> },
     { id: 'settings', label: 'Paramètres', icon: <Lock size={16} /> },
   ];
@@ -58,6 +60,7 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
                 }}
               >
                 {m.icon} {m.label}
+                {m.badge > 0 && <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full font-mono" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>{m.badge}</span>}
               </button>
             ))}
           </div>
@@ -67,6 +70,7 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
           {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} showToast={showToast} />}
           {adminPage === 'services' && <AdminServices services={services} updateServices={updateServices} showToast={showToast} />}
           {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} appSettings={appSettings} />}
+          {adminPage === 'messages' && <AdminMessages contacts={contacts} updateContacts={updateContacts} content={content} appSettings={appSettings} showToast={showToast} />}
           {adminPage === 'content' && <AdminContent content={content} updateContent={updateContent} showToast={showToast} />}
           {adminPage === 'settings' && <AdminSettings appSettings={appSettings} updateAppSettings={updateAppSettings} showToast={showToast} />}
         </main>
@@ -1335,6 +1339,178 @@ function AdminContent({ content, updateContent, showToast }) {
             <RichTextEditor value={draft.legalTerms || ''} onChange={v => setDraft({...draft, legalTerms: v})} placeholder="Conditions d'utilisation…" />
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AdminMessages({ contacts, updateContacts, content, appSettings, showToast }) {
+  const [selected, setSelected] = useState(null);
+  const [replyModal, setReplyModal] = useState(null);
+
+  const markRead = (id) => {
+    const updated = contacts.map(c => c.id === id ? { ...c, read: true } : c);
+    updateContacts(updated);
+  };
+
+  const deleteContact = (id) => {
+    updateContacts(contacts.filter(c => c.id !== id));
+    if (selected?.id === id) setSelected(null);
+    showToast("Message supprimé");
+  };
+
+  const openReply = (contact) => {
+    setReplyModal(contact);
+  };
+
+  const list = [...(contacts || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="font-display text-3xl mb-1">Messages</div>
+        <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>{list.length} message{list.length !== 1 ? 's' : ''} reçu{list.length !== 1 ? 's' : ''}</div>
+      </div>
+
+      {list.length === 0 ? (
+        <div className="text-center py-20 rounded-2xl" style={{ background: 'var(--cream)', border: '1px solid var(--line)' }}>
+          <Mail size={32} style={{ color: 'var(--line)', margin: '0 auto 12px' }} />
+          <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Aucun message pour le moment</div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-[300px_1fr] gap-4">
+          {/* Liste */}
+          <div className="space-y-2">
+            {list.map(c => (
+              <button
+                key={c.id}
+                onClick={() => { setSelected(c); markRead(c.id); }}
+                className="w-full text-left p-4 rounded-xl transition-all"
+                style={{
+                  background: selected?.id === c.id ? 'var(--ink)' : 'var(--cream)',
+                  color: selected?.id === c.id ? 'var(--cream)' : 'var(--ink)',
+                  border: `1px solid ${selected?.id === c.id ? 'transparent' : 'var(--line)'}`,
+                }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-medium text-sm truncate">{c.name}</span>
+                  {!c.read && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: 'var(--sage-dark)' }} />}
+                </div>
+                <div className="text-xs truncate opacity-70">{c.subject || 'Sans sujet'}</div>
+                <div className="text-[10px] mt-1 opacity-50 font-mono">
+                  {new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Détail */}
+          {selected ? (
+            <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--line)', background: 'var(--cream)' }}>
+              <div className="px-6 py-4 flex items-start justify-between" style={{ borderBottom: '1px solid var(--line)' }}>
+                <div>
+                  <div className="font-display text-xl">{selected.name}</div>
+                  <div className="text-xs font-mono mt-0.5" style={{ color: 'var(--ink-soft)' }}>
+                    <a href={`mailto:${selected.email}`} style={{ color: 'var(--sage-dark)' }}>{selected.email}</a>
+                    {selected.phone && <> · {selected.phone}</>}
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>
+                    {new Date(selected.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => openReply(selected)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                    <Mail size={12} /> Répondre
+                  </button>
+                  <button onClick={() => deleteContact(selected.id)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+              {selected.subject && (
+                <div className="px-6 py-3 text-sm font-medium" style={{ borderBottom: '1px solid var(--line)', color: 'var(--ink-soft)' }}>
+                  Sujet : {selected.subject}
+                </div>
+              )}
+              <div className="px-6 py-5 text-sm whitespace-pre-wrap leading-relaxed">{selected.message}</div>
+            </div>
+          ) : (
+            <div className="rounded-2xl flex items-center justify-center" style={{ border: '1px solid var(--line)', background: 'var(--cream)', minHeight: '200px' }}>
+              <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Sélectionnez un message</div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {replyModal && (
+        <ContactReplyModal
+          contact={replyModal}
+          content={content}
+          appSettings={appSettings}
+          onClose={() => setReplyModal(null)}
+          showToast={showToast}
+        />
+      )}
+    </div>
+  );
+}
+
+function ContactReplyModal({ contact, content, appSettings, onClose, showToast }) {
+  const [subject, setSubject] = useState(`Re: ${contact.subject || 'Votre message'}`);
+  const [body, setBody] = useState(`Bonjour ${contact.name.split(' ')[0]},\n\n`);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
+
+  const send = async () => {
+    setSending(true);
+    setError(null);
+    const result = await sendEmail({
+      to: contact.email,
+      toName: contact.name,
+      subject,
+      body,
+      fromName: content.siteName || 'Jodie Peltier',
+      replyTo: content.contactEmail || undefined,
+      testEmail: appSettings?.testEmail || undefined,
+    });
+    setSending(false);
+    if (!result.ok) { setError("Erreur d'envoi : " + result.error); return; }
+    showToast("Réponse envoyée ✓");
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,15,16,0.5)' }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: 'var(--cream)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'var(--sage-dark)' }}>
+          <div className="font-display text-xl" style={{ color: 'var(--cream)' }}>Répondre à {contact.name}</div>
+          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.6)' }}><X size={18} /></button>
+        </div>
+        <div className="p-6 space-y-3">
+          <div className="text-xs font-mono px-3 py-2 rounded-lg" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
+            À : <strong>{contact.email}</strong>
+            {isSupabaseConfigured
+              ? <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>Envoi automatique</span>
+              : <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#854d0e' }}>Via votre client mail</span>}
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Sujet</div>
+            <input value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 rounded-lg border outline-none text-sm" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Message</div>
+            <textarea rows={8} value={body} onChange={e => setBody(e.target.value)} className="w-full px-3 py-2 rounded-lg border outline-none text-sm resize-none font-mono" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          </div>
+          {error && <div className="text-xs px-3 py-2 rounded-lg" style={{ background: '#fef2f2', color: '#991b1b' }}>{error}</div>}
+          <div className="flex gap-3 pt-2">
+            <button onClick={send} disabled={sending} className="flex-1 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest" style={{ background: 'var(--sage-dark)', color: 'var(--cream)', opacity: sending ? 0.6 : 1 }}>
+              {sending ? 'Envoi…' : 'Envoyer'}
+            </button>
+            <button onClick={onClose} className="px-5 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}>
+              Annuler
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
