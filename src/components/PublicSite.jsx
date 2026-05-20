@@ -68,35 +68,35 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'contact' && <ContactPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} showToast={showToast} />}
       </main>
 
-      {/* Footer */}
-      <footer className="border-t mt-20 py-10" style={{ borderColor: 'var(--line)', background: 'var(--cream-light)' }}>
-        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8 text-sm">
+      {/* Footer cramoisie */}
+      <footer className="mt-20 py-12" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-10 text-sm">
           <div>
             <img
               src={import.meta.env.BASE_URL + 'logo-crop.png'}
               alt="JOYA"
-              style={{ height: '64px', width: 'auto', objectFit: 'contain', marginBottom: '0.5rem' }}
+              style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '0.75rem', filter: 'brightness(0) invert(1)' }}
             />
-            <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>{content.tagline}</p>
+            <p className="text-xs" style={{ color: 'rgba(252,247,248,0.6)' }}>{content.tagline}</p>
           </div>
           <div>
-            <div className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--ink-soft)' }}>Contact</div>
-            <div className="space-y-1">
+            <div className="text-xs uppercase tracking-widest mb-4 font-mono" style={{ color: 'var(--sage)' }}>Contact</div>
+            <div className="space-y-2" style={{ color: 'rgba(252,247,248,0.85)' }}>
               <div className="flex items-center gap-2"><Phone size={12} /> {content.contactPhone}</div>
               <div className="flex items-center gap-2"><Mail size={12} /> {content.contactEmail}</div>
               <div className="flex items-center gap-2"><MapPin size={12} /> {content.contactLocation}</div>
             </div>
           </div>
           <div>
-            <div className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--ink-soft)' }}>Navigation</div>
+            <div className="text-xs uppercase tracking-widest mb-4 font-mono" style={{ color: 'var(--sage)' }}>Navigation</div>
             <div className="grid grid-cols-2 gap-1">
               {navItems.map(item => (
-                <button key={item.id} onClick={() => setPage(item.id)} className="text-left hover:underline" style={{ color: 'var(--ink-soft)' }}>{item.label}</button>
+                <button key={item.id} onClick={() => setPage(item.id)} className="text-left hover:underline text-xs" style={{ color: 'rgba(252,247,248,0.7)' }}>{item.label}</button>
               ))}
             </div>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto px-6 mt-8 pt-6 border-t text-xs text-center" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+        <div className="max-w-6xl mx-auto px-6 mt-10 pt-6 text-xs text-center" style={{ borderTop: '1px solid rgba(252,247,248,0.15)', color: 'rgba(252,247,248,0.4)' }}>
           © {new Date().getFullYear()} {content.siteName} — Tous droits réservés
         </div>
       </footer>
@@ -107,19 +107,20 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
 function ServiceCard({ service, onClick }) {
   const colorMap = {
     sage: 'var(--sage)',
-    terracotta: '#a31621',
+    terracotta: 'var(--sage-dark)',
     ochre: 'var(--ochre)',
     olive: 'var(--olive)',
   };
   return (
-    <button onClick={onClick} className="text-left p-6 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-lg" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }}>
-      <div className="w-10 h-10 rounded-full mb-4" style={{ background: colorMap[service.color] || 'var(--sage)' }}></div>
+    <button onClick={onClick} className="text-left p-6 rounded-2xl transition-all hover:-translate-y-1 hover:shadow-xl group" style={{ background: 'var(--cream)', border: '1.5px solid var(--line)' }}>
+      <div className="w-10 h-10 rounded-full mb-4 transition-all group-hover:scale-110" style={{ background: colorMap[service.color] || 'var(--sage)' }}></div>
       <h3 className="font-display text-xl mb-2">{service.name}</h3>
       <div className="flex items-center gap-3 text-xs mb-3 font-mono" style={{ color: 'var(--ink-soft)' }}>
-        <span className="flex items-center gap-1"><Clock size={12} /> {service.duration} min</span>
-        <span className="flex items-center gap-1"><Euro size={12} /> {service.priceLabel}</span>
+        {!service.surDevis && <span className="flex items-center gap-1"><Clock size={12} /> {service.duration} min</span>}
+        <span className="flex items-center gap-1 font-semibold" style={{ color: 'var(--sage-dark)' }}><Euro size={12} /> {service.priceLabel}</span>
       </div>
-      <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{service.description}</p>
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{service.description}</p>
+      <div className="mt-4 text-xs font-mono uppercase tracking-widest" style={{ color: 'var(--sage-dark)' }}>Réserver →</div>
     </button>
   );
 }
@@ -165,14 +166,13 @@ function HomePage({ content, setPage, services }) {
         </div>
       </section>
 
-      {/* Quote */}
-      <section className="py-20 px-6 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="leaf-divider"></div>
-          <p className="font-display italic text-2xl md:text-3xl leading-relaxed" style={{ color: 'var(--ink-soft)' }}>
+      {/* Quote — bande cramoisie pleine largeur */}
+      <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="font-display italic text-3xl md:text-4xl leading-relaxed" style={{ color: 'var(--cream)' }}>
             {content.heroQuote}
           </p>
-          <div className="leaf-divider"></div>
+          <div className="mt-8 w-16 h-px mx-auto" style={{ background: 'rgba(252,247,248,0.35)' }}></div>
         </div>
       </section>
 
@@ -180,7 +180,7 @@ function HomePage({ content, setPage, services }) {
       <section className="py-20 px-6" style={{ background: 'var(--cream-light)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <div className="text-xs uppercase tracking-[0.3em] mb-3 font-mono" style={{ color: 'var(--sage-dark)' }}>Accompagnement</div>
+            <div className="inline-block text-xs uppercase tracking-[0.3em] px-4 py-1 rounded-full mb-4 font-mono" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>Accompagnement</div>
             <h2 className="font-display text-4xl md:text-5xl">Trouvez la formule qui vous correspond</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
@@ -189,22 +189,27 @@ function HomePage({ content, setPage, services }) {
         </div>
       </section>
 
-      {/* Approach */}
-      <section className="py-20 px-6">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-8 stagger">
-          {[
-            { icon: <Heart size={20} />, title: "Bienveillance", text: "Un espace d'écoute sans jugement, à votre rythme." },
-            { icon: <Compass size={20} />, title: "Clarté", text: "Des objectifs concrets et un cap clair dès la première séance." },
-            { icon: <Users size={20} />, title: "Sur mesure", text: "Chaque parcours est construit autour de votre singularité." }
-          ].map((v, i) => (
-            <div key={i} className="text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4" style={{ background: 'var(--sage-light)', color: 'var(--sage-dark)' }}>
-                {v.icon}
+      {/* Approach — bande cramoisie */}
+      <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-4xl md:text-5xl" style={{ color: 'var(--cream)' }}>Mon approche</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 stagger">
+            {[
+              { icon: <Heart size={24} />, title: "Bienveillance", text: "Un espace d'écoute sans jugement, à votre rythme." },
+              { icon: <Compass size={24} />, title: "Clarté", text: "Des objectifs concrets et un cap clair dès la première séance." },
+              { icon: <Users size={24} />, title: "Sur mesure", text: "Chaque parcours est construit autour de votre singularité." }
+            ].map((v, i) => (
+              <div key={i} className="text-center p-8 rounded-2xl" style={{ background: 'rgba(252,247,248,0.08)', border: '1px solid rgba(252,247,248,0.15)' }}>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: 'var(--sage)', color: 'var(--sage-dark)' }}>
+                  {v.icon}
+                </div>
+                <h3 className="font-display text-2xl mb-3" style={{ color: 'var(--cream)' }}>{v.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(252,247,248,0.7)' }}>{v.text}</p>
               </div>
-              <h3 className="font-display text-2xl mb-2">{v.title}</h3>
-              <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{v.text}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
     </div>
@@ -213,28 +218,41 @@ function HomePage({ content, setPage, services }) {
 
 function WhatIsPage({ content, setPage }) {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-16">
-      <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Comprendre</div>
-      <h1 className="font-display text-5xl md:text-6xl mb-8">{content.whatIsTitle}</h1>
-      <p className="text-lg leading-relaxed mb-12" style={{ color: 'var(--ink-soft)' }}>{content.whatIsText}</p>
-
-      <div className="leaf-divider"></div>
-
-      <h2 className="font-display text-4xl mb-8 mt-12">{content.forWhomTitle}</h2>
-      <div className="grid md:grid-cols-2 gap-4 stagger">
-        {content.forWhomItems.map((item, i) => (
-          <div key={i} className="p-6 rounded-2xl border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}>
-            <div className="font-mono text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--terracotta-dark)' }}>0{i+1}</div>
-            <h3 className="font-display text-2xl mb-2">{item.title}</h3>
-            <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{item.text}</p>
-          </div>
-        ))}
+    <div>
+      {/* Header cramoisie */}
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Comprendre</div>
+          <h1 className="font-display text-5xl md:text-6xl mb-6" style={{ color: 'var(--cream)' }}>{content.whatIsTitle}</h1>
+          <p className="text-lg leading-relaxed max-w-2xl" style={{ color: 'rgba(252,247,248,0.75)' }}>{content.whatIsText}</p>
+        </div>
       </div>
 
-      <div className="mt-12 text-center">
-        <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
-          Échangeons
-        </button>
+      {/* Pour qui — cartes alternées */}
+      <div className="px-6 py-16" style={{ background: 'var(--cream-light)' }}>
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-display text-4xl mb-10">{content.forWhomTitle}</h2>
+          <div className="grid md:grid-cols-2 gap-4 stagger">
+            {content.forWhomItems.map((item, i) => {
+              const isCrimson = i % 2 === 0;
+              return (
+                <div key={i} className="p-8 rounded-2xl" style={{
+                  background: isCrimson ? 'var(--sage-dark)' : 'var(--cream)',
+                  border: isCrimson ? 'none' : '1.5px solid var(--line)'
+                }}>
+                  <div className="font-display text-5xl mb-3" style={{ color: isCrimson ? 'rgba(252,247,248,0.2)' : 'var(--sage)' }}>0{i+1}</div>
+                  <h3 className="font-display text-2xl mb-2" style={{ color: isCrimson ? 'var(--cream)' : 'var(--ink)' }}>{item.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: isCrimson ? 'rgba(252,247,248,0.7)' : 'var(--ink-soft)' }}>{item.text}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-12 text-center">
+            <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+              Échangeons
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -242,21 +260,31 @@ function WhatIsPage({ content, setPage }) {
 
 function EthicsPage({ content }) {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-16">
-      <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Cadre</div>
-      <h1 className="font-display text-5xl md:text-6xl mb-8">{content.ethicsTitle}</h1>
-      <p className="text-lg leading-relaxed mb-12" style={{ color: 'var(--ink-soft)' }}>{content.ethicsText}</p>
+    <div>
+      {/* Header blush */}
+      <div className="py-16 px-6" style={{ background: 'var(--sage-light)' }}>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Cadre</div>
+          <h1 className="font-display text-5xl md:text-6xl mb-6" style={{ color: 'var(--ink)' }}>{content.ethicsTitle}</h1>
+          <p className="text-lg leading-relaxed max-w-2xl" style={{ color: 'var(--ink-soft)' }}>{content.ethicsText}</p>
+        </div>
+      </div>
 
-      <div className="space-y-4 stagger">
-        {content.ethicsPrinciples.map((p, i) => (
-          <div key={i} className="flex gap-6 p-6 rounded-2xl" style={{ background: 'var(--cream-light)' }}>
-            <div className="font-display text-4xl flex-shrink-0" style={{ color: 'var(--terracotta-dark)' }}>0{i+1}</div>
-            <div>
-              <h3 className="font-display text-2xl mb-1">{p.title}</h3>
-              <p className="text-sm" style={{ color: 'var(--ink-soft)' }}>{p.text}</p>
+      {/* Principes */}
+      <div className="px-6 py-16">
+        <div className="max-w-4xl mx-auto space-y-3 stagger">
+          {content.ethicsPrinciples.map((p, i) => (
+            <div key={i} className="flex gap-0 rounded-2xl overflow-hidden" style={{ border: '1.5px solid var(--line)' }}>
+              <div className="flex items-center justify-center px-6 py-6 flex-shrink-0 w-20" style={{ background: 'var(--sage-dark)' }}>
+                <span className="font-display text-3xl font-light" style={{ color: 'var(--cream)' }}>0{i+1}</span>
+              </div>
+              <div className="p-6" style={{ background: 'var(--cream)' }}>
+                <h3 className="font-display text-2xl mb-1">{p.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{p.text}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -264,25 +292,36 @@ function EthicsPage({ content }) {
 
 function AboutPage({ content, setPage }) {
   return (
-    <div className="max-w-5xl mx-auto px-6 py-16">
-      <div className="grid md:grid-cols-5 gap-12">
-        <div className="md:col-span-2">
-          <div className="aspect-[3/4] rounded-3xl grain" style={{ background: 'linear-gradient(160deg, var(--sage) 0%, var(--olive) 100%)' }}>
-            <svg viewBox="0 0 300 400" className="w-full h-full opacity-30">
-              <circle cx="150" cy="150" r="60" fill="none" stroke="var(--cream)" strokeWidth="1.5" />
-              <path d="M 90 250 Q 150 320 210 250" fill="none" stroke="var(--cream)" strokeWidth="1.5" />
-            </svg>
-          </div>
+    <div>
+      {/* Bande cramoisie avec nom */}
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Présentation</div>
+          <h1 className="font-display text-5xl md:text-6xl mb-2" style={{ color: 'var(--cream)' }}>Qui suis-je ?</h1>
+          <p className="font-display italic text-3xl" style={{ color: 'var(--sage)' }}>Jodie Peltier</p>
         </div>
-        <div className="md:col-span-3">
-          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Présentation</div>
-          <h1 className="font-display text-5xl md:text-6xl mb-2">Qui suis-je ?</h1>
-          <p className="font-display italic text-2xl mb-6" style={{ color: 'var(--terracotta-dark)' }}>Jodie Peltier</p>
-          <p className="text-base leading-relaxed mb-4" style={{ color: 'var(--ink-soft)' }}>{content.aboutShort}</p>
-          <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--ink-soft)' }}>{content.aboutLong}</p>
-          <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
-            Réserver un appel découverte
-          </button>
+      </div>
+
+      {/* Contenu */}
+      <div className="max-w-5xl mx-auto px-6 py-16">
+        <div className="grid md:grid-cols-5 gap-12 items-start">
+          <div className="md:col-span-2">
+            <div className="aspect-[3/4] rounded-3xl" style={{ background: 'linear-gradient(160deg, var(--sage-dark) 0%, var(--olive) 100%)' }}>
+              <div className="w-full h-full flex items-center justify-center">
+                <img src={import.meta.env.BASE_URL + 'logo-crop.png'} alt="JOYA" style={{ width: '70%', objectFit: 'contain', opacity: 0.25 }} />
+              </div>
+            </div>
+          </div>
+          <div className="md:col-span-3">
+            {/* Encart blush */}
+            <div className="p-6 rounded-2xl mb-6" style={{ background: 'var(--sage-light)', borderLeft: '4px solid var(--sage-dark)' }}>
+              <p className="text-base leading-relaxed font-medium" style={{ color: 'var(--ink)' }}>{content.aboutShort}</p>
+            </div>
+            <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--ink-soft)' }}>{content.aboutLong}</p>
+            <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+              Réserver un appel découverte
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -291,11 +330,23 @@ function AboutPage({ content, setPage }) {
 
 function ServicesPage({ content, services, setPage }) {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-16">
-      <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage-dark)' }}>● Prestations</div>
-      <h1 className="font-display text-5xl md:text-6xl mb-12">Mes services</h1>
-      <div className="grid md:grid-cols-2 gap-6 stagger">
-        {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => setPage('contact')} />)}
+    <div>
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Prestations</div>
+          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>Mes services</h1>
+        </div>
+      </div>
+      <div className="max-w-6xl mx-auto px-6 py-16">
+        <div className="grid md:grid-cols-2 gap-6 stagger">
+          {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => setPage('contact')} />)}
+        </div>
+        <div className="mt-16 p-10 rounded-2xl text-center" style={{ background: 'var(--sage-dark)' }}>
+          <p className="font-display italic text-2xl mb-6" style={{ color: 'var(--cream)' }}>Vous avez une question ? Je suis là.</p>
+          <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--cream)', color: 'var(--sage-dark)' }}>
+            Me contacter
+          </button>
+        </div>
       </div>
     </div>
   );
