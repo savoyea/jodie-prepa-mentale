@@ -395,8 +395,8 @@ function EthicsPage({ content }) {
           <img
             src={schemaImg}
             alt="Schéma déontologique"
-            className="w-full rounded-2xl shadow-md object-contain"
-            style={{ border: '1px solid var(--line)', background: '#fff' }}
+            className="rounded-2xl shadow-md object-contain mx-auto"
+            style={{ border: '1px solid var(--line)', background: '#fff', maxWidth: '713px', width: '100%' }}
           />
         </div>
       </div>
