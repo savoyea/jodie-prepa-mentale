@@ -4,6 +4,7 @@ export const DEFAULT_CONTENT = {
   siteName: "Jodie Peltier",
   tagline: "Préparation mentale",
   logo: '',
+  logoFooter: '',
   favicon: '',
   heroImage: '',
   heroStyle: 'split',

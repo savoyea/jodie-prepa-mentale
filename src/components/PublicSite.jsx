@@ -72,11 +72,13 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
       <footer className="mt-20 py-12" style={{ background: 'var(--sage-dark)' }}>
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-10 text-sm">
           <div>
-            <img
-              src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')}
-              alt="JOYA"
-              style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '0.75rem', filter: 'brightness(0) invert(1)' }}
-            />
+            {content.logoFooter ? (
+              <img src={content.logoFooter} alt="JOYA" style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '0.75rem' }} />
+            ) : (
+              <div style={{ display: 'inline-block', background: '#fff', borderRadius: 10, padding: '4px 10px', marginBottom: '0.75rem' }}>
+                <img src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')} alt="JOYA" style={{ height: '48px', width: 'auto', objectFit: 'contain', display: 'block' }} />
+              </div>
+            )}
             <p className="text-xs mb-4" style={{ color: 'rgba(252,247,248,0.6)' }}>{content.tagline}</p>
             <SocialIcons links={content.socialLinks} light />
           </div>

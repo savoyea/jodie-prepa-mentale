@@ -930,11 +930,18 @@ function AdminContent({ content, updateContent, showToast }) {
             </div>
 
             <ImageUpload
-              label="Logo"
+              label="Logo (navbar & header)"
               value={draft.logo || ''}
               onChange={v => setDraft({...draft, logo: v})}
               preview="logo"
-              help="Remplace le logo JOYA dans la navbar, le header et le footer. PNG transparent recommandé."
+              help="Affiché dans la navbar et le header. PNG transparent recommandé."
+            />
+            <ImageUpload
+              label="Logo footer"
+              value={draft.logoFooter || ''}
+              onChange={v => setDraft({...draft, logoFooter: v})}
+              preview="logo"
+              help="Version pour le fond cramoisi du footer (blanc ou clair). Si vide, le logo principal est inversé en blanc automatiquement."
             />
             <ImageUpload
               label="Favicon"
