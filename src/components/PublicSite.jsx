@@ -3,6 +3,11 @@ import { Menu, X, Phone, Mail, MapPin, Clock, Euro, Heart, Compass, Users, Chevr
 import { toLocalDateStr, addMinutes } from '../utils.js';
 import { sendEmail, fillTemplate } from '../lib/email.js';
 
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const isValidPhone = (v) => !v || /^[\d\s\.\-\+\(\)]{7,}$/.test(v.trim()) && v.replace(/\D/g, '').length >= 7;
+const ErrMsg = ({ msg }) => msg ? <p className="text-xs mt-1" style={{ color: '#dc2626' }}>{msg}</p> : null;
+const errBorder = (err) => ({ background: 'var(--cream-light)', borderColor: err ? '#dc2626' : 'var(--line)' });
+
 export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, contacts, updateContacts, appSettings, menuOpen, setMenuOpen, showToast }) {
   const navItems = [
     { id: 'home', label: 'Accueil' },
@@ -706,6 +711,7 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
   const [selectedService, setSelectedService] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', phone: '', note: '', besoin: '' });
+  const [errors, setErrors] = useState({});
   const [weekOffset, setWeekOffset] = useState(0);
 
   const isSurDevis = selectedService?.surDevis;
@@ -724,8 +730,14 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
   };
 
   const submitBooking = () => {
-    if (!form.name || !form.email) { showToast("Veuillez renseigner votre nom et email"); return; }
-    if (isSurDevis && !form.besoin) { showToast("Veuillez décrire votre besoin"); return; }
+    const errs = {};
+    if (!form.name.trim()) errs.name = 'Le nom est requis';
+    if (!form.email.trim()) errs.email = "L'email est requis";
+    else if (!isValidEmail(form.email)) errs.email = 'Format email invalide';
+    if (!isValidPhone(form.phone)) errs.phone = 'Numéro de téléphone invalide';
+    if (isSurDevis && !form.besoin.trim()) errs.besoin = 'Veuillez décrire votre besoin';
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     const newBooking = { id: 'b' + Date.now(), clientName: form.name, clientEmail: form.email, clientPhone: form.phone, serviceId: selectedService.id, date: selectedSlot?.date || '', time: selectedSlot?.time || '', status: 'en attente', note: isSurDevis ? form.besoin : form.note };
     updateBookings([...bookings, newBooking]);
     if (selectedSlot) {
@@ -839,11 +851,23 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
             <h2 className="font-display text-3xl mb-6">{isSurDevis ? 'Décrivez votre besoin' : 'Vos coordonnées'}</h2>
             <div className="space-y-3">
               {isSurDevis && (
-                <textarea value={form.besoin} onChange={e => setForm({ ...form, besoin: e.target.value })} placeholder="Décrivez votre projet, contexte, nombre de personnes, objectifs… *" rows={5} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <div>
+                  <textarea value={form.besoin} onChange={e => { setForm({ ...form, besoin: e.target.value }); setErrors(er => ({ ...er, besoin: '' })); }} placeholder="Décrivez votre projet, contexte, nombre de personnes, objectifs… *" rows={5} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={errBorder(errors.besoin)} />
+                  <ErrMsg msg={errors.besoin} />
+                </div>
               )}
-              <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-              <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-              <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+              <div>
+                <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setErrors(er => ({ ...er, name: '' })); }} placeholder="Prénom & Nom *" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.name)} />
+                <ErrMsg msg={errors.name} />
+              </div>
+              <div>
+                <input value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setErrors(er => ({ ...er, email: '' })); }} placeholder="Email *" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.email)} />
+                <ErrMsg msg={errors.email} />
+              </div>
+              <div>
+                <input value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setErrors(er => ({ ...er, phone: '' })); }} placeholder="Téléphone" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.phone)} />
+                <ErrMsg msg={errors.phone} />
+              </div>
               {!isSurDevis && <textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} placeholder="Un message (optionnel)" rows={3} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />}
               <button onClick={submitBooking} className="w-full px-6 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
                 {isSurDevis ? 'Envoyer la demande' : 'Confirmer la réservation'}
@@ -874,14 +898,19 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
 
 function ContactPage({ content, appSettings, contacts, updateContacts, setPage, showToast }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [errors, setErrors] = useState({});
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
   const handleSubmit = async () => {
-    if (!form.name || !form.email || !form.message) {
-      showToast("Veuillez renseigner votre nom, email et message");
-      return;
-    }
+    const errs = {};
+    if (!form.name.trim()) errs.name = 'Le nom est requis';
+    if (!form.email.trim()) errs.email = "L'email est requis";
+    else if (!isValidEmail(form.email)) errs.email = 'Format email invalide';
+    if (!isValidPhone(form.phone)) errs.phone = 'Numéro de téléphone invalide';
+    if (!form.message.trim()) errs.message = 'Le message est requis';
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
     setSending(true);
     // Sauvegarder le contact
     const newContact = {
@@ -942,17 +971,20 @@ function ContactPage({ content, appSettings, contacts, updateContacts, setPage, 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Prénom & Nom *</label>
-                  <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Marie Dupont" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                  <input value={form.name} onChange={e => { setForm({ ...form, name: e.target.value }); setErrors(er => ({ ...er, name: '' })); }} placeholder="Marie Dupont" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.name)} />
+                  <ErrMsg msg={errors.name} />
                 </div>
                 <div>
                   <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Email *</label>
-                  <input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} type="email" placeholder="marie@exemple.fr" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                  <input value={form.email} onChange={e => { setForm({ ...form, email: e.target.value }); setErrors(er => ({ ...er, email: '' })); }} placeholder="marie@exemple.fr" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.email)} />
+                  <ErrMsg msg={errors.email} />
                 </div>
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Téléphone</label>
-                  <input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="06 00 00 00 00" className="w-full px-4 py-3 rounded-lg border outline-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                  <input value={form.phone} onChange={e => { setForm({ ...form, phone: e.target.value }); setErrors(er => ({ ...er, phone: '' })); }} placeholder="06 00 00 00 00" className="w-full px-4 py-3 rounded-lg border outline-none" style={errBorder(errors.phone)} />
+                  <ErrMsg msg={errors.phone} />
                 </div>
                 <div>
                   <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Sujet</label>
@@ -961,7 +993,8 @@ function ContactPage({ content, appSettings, contacts, updateContacts, setPage, 
               </div>
               <div>
                 <label className="text-xs uppercase tracking-widest font-mono mb-1.5 block" style={{ color: 'var(--ink-soft)' }}>Message *</label>
-                <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Dites-moi ce qui vous amène…" rows={6} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+                <textarea value={form.message} onChange={e => { setForm({ ...form, message: e.target.value }); setErrors(er => ({ ...er, message: '' })); }} placeholder="Dites-moi ce qui vous amène…" rows={6} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={errBorder(errors.message)} />
+                <ErrMsg msg={errors.message} />
               </div>
               <div className="flex items-center gap-4 pt-2">
                 <button onClick={handleSubmit} disabled={sending} className="px-8 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90 disabled:opacity-50" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
