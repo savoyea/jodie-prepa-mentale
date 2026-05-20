@@ -3,12 +3,13 @@ import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, 
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
 import { supabase, isSupabaseConfigured, supabaseAnonKey } from '../lib/supabase.js';
 
-export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, showToast, onExportAll }) {
+export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, appSettings, updateAppSettings, showToast, onExportAll }) {
   const menu = [
     { id: 'planning', label: 'Planning', icon: <Calendar size={16} /> },
     { id: 'services', label: 'Services', icon: <Settings size={16} /> },
     { id: 'bookings', label: 'Réservations', icon: <Users size={16} /> },
     { id: 'content', label: 'Contenu du site', icon: <FileText size={16} /> },
+    { id: 'settings', label: 'Paramètres', icon: <Lock size={16} /> },
   ];
   const stats = {
     upcomingBookings: bookings.filter(b => b.status !== 'annulé').length,
@@ -64,8 +65,9 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
         <main className="fade-in" key={adminPage}>
           {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} showToast={showToast} />}
           {adminPage === 'services' && <AdminServices services={services} updateServices={updateServices} showToast={showToast} />}
-          {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} />}
+          {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} appSettings={appSettings} />}
           {adminPage === 'content' && <AdminContent content={content} updateContent={updateContent} showToast={showToast} />}
+          {adminPage === 'settings' && <AdminSettings appSettings={appSettings} updateAppSettings={updateAppSettings} showToast={showToast} />}
         </main>
       </div>
     </div>
@@ -594,7 +596,7 @@ function fillTemplate(tpl, booking, service) {
     .replace(/{service}/g, service?.name || '');
 }
 
-function BookingResponseModal({ action, booking, service, content, onConfirm, onClose }) {
+function BookingResponseModal({ action, booking, service, content, appSettings, onConfirm, onClose }) {
   const templates = {
     confirmé: { subject: content.emailSubjectConfirm, body: content.emailTemplateConfirm },
     annulé:   { subject: content.emailSubjectCancel,  body: content.emailTemplateCancel  },
@@ -623,6 +625,7 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
             body,
             fromName: content.siteName || 'Jodie Peltier',
             replyTo: content.contactEmail || undefined,
+            testEmail: appSettings?.testEmail || undefined,
           },
         });
         if (error) throw new Error(error.message);
@@ -676,7 +679,7 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
   );
 }
 
-function AdminBookings({ bookings, updateBookings, services, slots, updateSlots, showToast, content }) {
+function AdminBookings({ bookings, updateBookings, services, slots, updateSlots, showToast, content, appSettings }) {
   const [filter, setFilter] = useState('all');
   const [pending, setPending] = useState(null); // { booking, action, service }
 
@@ -758,6 +761,7 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
           booking={pending.booking}
           service={pending.service}
           content={content}
+          appSettings={appSettings}
           onConfirm={() => {
             if (pending.action === 'supprimé') doRemove(pending.booking.id);
             else doStatus(pending.booking.id, pending.action);
@@ -1361,6 +1365,51 @@ function AdminContent({ content, updateContent, showToast }) {
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function AdminSettings({ appSettings, updateAppSettings, showToast }) {
+  const [draft, setDraft] = useState(appSettings || {});
+
+  const save = () => { updateAppSettings(draft); showToast('Paramètres enregistrés ✓'); };
+
+  return (
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <div className="font-display text-3xl mb-1">Paramètres</div>
+        <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Configuration technique du back-office</div>
+      </div>
+
+      <div className="rounded-2xl p-6 space-y-5" style={{ background: 'var(--cream)', border: '1px solid var(--line)' }}>
+        <div className="font-display text-xl">Email</div>
+
+        <div>
+          <label className="block text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>
+            Email de test
+          </label>
+          <input
+            type="email"
+            value={draft.testEmail || ''}
+            onChange={e => setDraft({ ...draft, testEmail: e.target.value })}
+            placeholder="votre@email.com"
+            className="w-full px-3 py-2 rounded-lg border outline-none text-sm"
+            style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
+          />
+          <p className="text-xs mt-1.5" style={{ color: 'var(--ink-soft)' }}>
+            En mode test Resend (<code>onboarding@resend.dev</code>), tous les emails sont redirigés vers cette adresse.
+            Laissez vide pour utiliser l'email de contact du site.
+          </p>
+        </div>
+      </div>
+
+      <button
+        onClick={save}
+        className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest transition-all hover:opacity-90"
+        style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}
+      >
+        <Save size={14} /> Enregistrer
+      </button>
     </div>
   );
 }

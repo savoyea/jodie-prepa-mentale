@@ -13,6 +13,7 @@ export default function App() {
   const [services, setServices] = useState(DEFAULT_SERVICES);
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState(DEFAULT_BOOKINGS);
+  const [appSettings, setAppSettings] = useState({ testEmail: '' });
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminAuth, setAdminAuth] = useState(false);
@@ -26,6 +27,7 @@ export default function App() {
       const c = await storage.get('content', DEFAULT_CONTENT);
       const s = await storage.get('services', DEFAULT_SERVICES);
       const b = await storage.get('bookings', DEFAULT_BOOKINGS);
+      const as = await storage.get('appSettings', { testEmail: '' });
       const slVersion = await storage.get('slotsVersion', 1);
       let sl = slVersion >= SLOTS_VERSION ? await storage.get('slots', null) : null;
       if (!sl || !sl.length) {
@@ -37,6 +39,7 @@ export default function App() {
       setServices(s);
       setSlots(sl);
       setBookings(b);
+      setAppSettings(as);
       setLoaded(true);
     })();
   }, []);
@@ -61,6 +64,7 @@ export default function App() {
   const updateServices = (s) => { setServices(s); storage.set('services', s); };
   const updateSlots = (s) => { setSlots(s); storage.set('slots', s); };
   const updateBookings = (b) => { setBookings(b); storage.set('bookings', b); };
+  const updateAppSettings = (as) => { setAppSettings(as); storage.set('appSettings', as); };
 
   const exportAllToSupabase = async () => {
     await Promise.all([
@@ -176,6 +180,7 @@ export default function App() {
             services={services} updateServices={updateServices}
             slots={slots} updateSlots={updateSlots}
             bookings={bookings} updateBookings={updateBookings}
+            appSettings={appSettings} updateAppSettings={updateAppSettings}
             showToast={showToast}
             onExportAll={exportAllToSupabase}
           />
