@@ -67,7 +67,7 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
         </aside>
 
         <main className="fade-in" key={adminPage}>
-          {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} showToast={showToast} />}
+          {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} content={content} appSettings={appSettings} showToast={showToast} />}
           {adminPage === 'services' && <AdminServices services={services} updateServices={updateServices} showToast={showToast} />}
           {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} appSettings={appSettings} />}
           {adminPage === 'messages' && <AdminMessages contacts={contacts} updateContacts={updateContacts} content={content} appSettings={appSettings} showToast={showToast} />}
@@ -249,13 +249,14 @@ function NewBookingModal({ slot, services, onClose, onSubmit }) {
   );
 }
 
-function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services, showToast }) {
+function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services, content, appSettings, showToast }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [newSlotDate, setNewSlotDate] = useState('');
   const [newSlotTime, setNewSlotTime] = useState('');
   const [newSlotDuration, setNewSlotDuration] = useState(60);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingSlot, setBookingSlot] = useState(null);
+  const [pending, setPending] = useState(null);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -319,6 +320,11 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
   const setBookingStatus = (id, status) => {
     updateBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
     showToast(`Statut mis à jour : ${status}`);
+  };
+
+  const askAction = (booking, action) => {
+    setSelectedBooking(null);
+    setPending({ booking, action, service: services.find(s => s.id === booking.serviceId) });
   };
 
   const selectedService = selectedBooking ? services.find(s => s.id === selectedBooking.serviceId) : null;
@@ -437,9 +443,21 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
         booking={selectedBooking}
         service={selectedService}
         onClose={() => setSelectedBooking(null)}
-        onConfirm={(id) => setBookingStatus(id, 'confirmé')}
-        onCancel={(id) => setBookingStatus(id, 'annulé')}
+        onConfirm={(id) => askAction(bookings.find(b => b.id === id), 'confirmé')}
+        onCancel={(id) => askAction(bookings.find(b => b.id === id), 'annulé')}
       />
+
+      {pending && (
+        <BookingResponseModal
+          action={pending.action}
+          booking={pending.booking}
+          service={pending.service}
+          content={content}
+          appSettings={appSettings}
+          onConfirm={() => { setBookingStatus(pending.booking.id, pending.action); setPending(null); }}
+          onClose={() => setPending(null)}
+        />
+      )}
 
       <NewBookingModal
         slot={bookingSlot}
