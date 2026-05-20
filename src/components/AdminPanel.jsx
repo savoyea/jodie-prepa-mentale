@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, Clock, Phone, Mail, X, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
+import { supabase, isSupabaseConfigured, supabaseAnonKey } from '../lib/supabase.js';
 
 export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, showToast, onExportAll }) {
   const menu = [
@@ -615,6 +615,7 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
     try {
       if (isSupabaseConfigured) {
         const { data, error } = await supabase.functions.invoke('send-email', {
+          headers: { Authorization: `Bearer ${supabaseAnonKey}` },
           body: {
             to: booking.clientEmail,
             toName: booking.clientName,
