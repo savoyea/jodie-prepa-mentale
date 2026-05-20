@@ -479,7 +479,7 @@ function AdminServices({ services, updateServices, showToast }) {
     showToast("Service supprimé");
   };
 
-  const colorMap = { sage: 'var(--sage)', terracotta: 'var(--terracotta)', ochre: 'var(--ochre)', olive: 'var(--olive)' };
+  const colorMap = { sage: 'var(--sage)', terracotta: '#a31621', ochre: 'var(--ochre)', olive: 'var(--olive)' };
 
   return (
     <div>

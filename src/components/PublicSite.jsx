@@ -15,16 +15,14 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
   return (
     <div>
       {/* Navigation */}
-      <nav className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'rgba(245, 239, 230, 0.85)', borderColor: 'var(--line)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button onClick={() => setPage('home')} className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: 'var(--sage)' }}>
-              <span className="font-display text-lg" style={{ color: 'var(--cream)' }}>J</span>
-            </div>
-            <div className="text-left">
-              <div className="font-display text-lg leading-none">{content.siteName}</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] mt-1" style={{ color: 'var(--ink-soft)' }}>{content.tagline}</div>
-            </div>
+      <nav className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'rgba(252, 247, 248, 0.90)', borderColor: 'var(--line)' }}>
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+          <button onClick={() => setPage('home')} className="flex items-center">
+            <img
+              src={import.meta.env.BASE_URL + 'logo-crop.png'}
+              alt="JOYA – Le mental au service de ta réussite"
+              style={{ height: '52px', width: 'auto', objectFit: 'contain' }}
+            />
           </button>
           <div className="hidden md:flex items-center gap-1">
             {navItems.map(item => (
@@ -74,8 +72,12 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
       <footer className="border-t mt-20 py-10" style={{ borderColor: 'var(--line)', background: 'var(--cream-light)' }}>
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-8 text-sm">
           <div>
-            <div className="font-display text-xl mb-2">{content.siteName}</div>
-            <p style={{ color: 'var(--ink-soft)' }}>{content.tagline}</p>
+            <img
+              src={import.meta.env.BASE_URL + 'logo-crop.png'}
+              alt="JOYA"
+              style={{ height: '64px', width: 'auto', objectFit: 'contain', marginBottom: '0.5rem' }}
+            />
+            <p className="text-xs" style={{ color: 'var(--ink-soft)' }}>{content.tagline}</p>
           </div>
           <div>
             <div className="text-xs uppercase tracking-widest mb-3" style={{ color: 'var(--ink-soft)' }}>Contact</div>
@@ -104,7 +106,10 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
 
 function ServiceCard({ service, onClick }) {
   const colorMap = {
-    sage: 'var(--sage)', terracotta: 'var(--terracotta)', ochre: 'var(--ochre)', olive: 'var(--olive)'
+    sage: 'var(--sage)',
+    terracotta: '#a31621',
+    ochre: 'var(--ochre)',
+    olive: 'var(--olive)',
   };
   return (
     <button onClick={onClick} className="text-left p-6 rounded-2xl border transition-all hover:-translate-y-1 hover:shadow-lg" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }}>
@@ -123,38 +128,39 @@ function HomePage({ content, setPage, services }) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden grain" style={{ background: 'linear-gradient(135deg, var(--cream) 0%, var(--sage-light) 100%)' }}>
+      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(150deg, var(--cream) 0%, var(--sage-light) 100%)' }}>
         <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center relative">
           <div className="stagger relative z-10">
             <div className="text-xs uppercase tracking-[0.3em] mb-6 font-mono" style={{ color: 'var(--sage-dark)' }}>● Préparation mentale</div>
             <h1 className="font-display text-5xl md:text-7xl leading-[1.05] mb-6" style={{ color: 'var(--ink)' }}>
               {content.heroTitle.split('\n').map((line, i) => (
                 <span key={i} className="block">
-                  {i === 1 ? <em style={{ fontStyle: 'italic', color: 'var(--terracotta-dark)' }}>{line}</em> : line}
+                  {i === 1 ? <em style={{ fontStyle: 'italic', color: 'var(--sage-dark)' }}>{line}</em> : line}
                 </span>
               ))}
             </h1>
             <p className="text-lg mb-8 max-w-md" style={{ color: 'var(--ink-soft)' }}>{content.heroSubtitle}</p>
             <div className="flex flex-wrap gap-3">
-              <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+              <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
                 Réserver un appel
               </button>
-              <button onClick={() => setPage('what')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all border" style={{ borderColor: 'var(--ink)', color: 'var(--ink)' }}>
+              <button onClick={() => setPage('what')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all border" style={{ borderColor: 'var(--sage-dark)', color: 'var(--sage-dark)' }}>
                 En savoir plus
               </button>
             </div>
           </div>
-          <div className="relative">
-            <div className="aspect-[4/5] rounded-[40%_60%_60%_40%/50%_40%_60%_50%] overflow-hidden grain" style={{ background: 'linear-gradient(160deg, var(--terracotta) 0%, var(--ochre) 100%)' }}>
-              <svg viewBox="0 0 400 500" className="w-full h-full opacity-40">
-                <circle cx="200" cy="250" r="180" fill="none" stroke="var(--cream)" strokeWidth="1" />
-                <circle cx="200" cy="250" r="120" fill="none" stroke="var(--cream)" strokeWidth="1" />
-                <circle cx="200" cy="250" r="60" fill="none" stroke="var(--cream)" strokeWidth="1" />
-                <path d="M 200 70 Q 280 250 200 430 Q 120 250 200 70" fill="none" stroke="var(--cream)" strokeWidth="1.5" />
-              </svg>
+          <div className="relative flex items-center justify-center">
+            {/* Logo JOYA en grand dans le hero */}
+            <div className="relative z-10 p-8">
+              <img
+                src={import.meta.env.BASE_URL + 'logo-crop.png'}
+                alt="JOYA"
+                className="w-full max-w-sm mx-auto drop-shadow-lg"
+                style={{ objectFit: 'contain' }}
+              />
             </div>
-            <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full grain" style={{ background: 'var(--sage)' }}></div>
-            <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full" style={{ background: 'var(--olive)', opacity: 0.7 }}></div>
+            <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: 'var(--sage)', opacity: 0.35 }}></div>
+            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full" style={{ background: 'var(--sage-dark)', opacity: 0.12 }}></div>
           </div>
         </div>
       </section>

@@ -63,18 +63,18 @@ export default function App() {
     <>
       <style>{`
         :root {
-          --cream: #f5efe6;
-          --cream-light: #faf6ef;
-          --sage: #a8b5a0;
-          --sage-light: #c9d3c0;
-          --sage-dark: #6b7a64;
-          --terracotta: #d4a896;
-          --terracotta-dark: #b88670;
-          --ochre: #c9a96e;
-          --olive: #8a8866;
-          --ink: #2a2a26;
-          --ink-soft: #4a4a44;
-          --line: #e0d8cc;
+          --cream: #fcf7f8;
+          --cream-light: #fff9fa;
+          --sage: #e6bfc2;
+          --sage-light: #f3dfe1;
+          --sage-dark: #a31621;
+          --terracotta: #e6bfc2;
+          --terracotta-dark: #a31621;
+          --ochre: #c8989c;
+          --olive: #7d1019;
+          --ink: #1a0f10;
+          --ink-soft: #5a3a3e;
+          --line: #ead6d8;
         }
         * { box-sizing: border-box; }
         body { margin: 0; }
@@ -107,7 +107,7 @@ export default function App() {
         .leaf-divider::before { left: -10px; }
         .leaf-divider::after { right: -10px; }
       `}</style>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
 
       <div className="font-body" style={{ background: 'var(--cream)', color: 'var(--ink)', minHeight: '100vh' }}>
         {/* Top switcher */}
