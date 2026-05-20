@@ -62,6 +62,17 @@ export default function App() {
   const updateSlots = (s) => { setSlots(s); storage.set('slots', s); };
   const updateBookings = (b) => { setBookings(b); storage.set('bookings', b); };
 
+  const exportAllToSupabase = async () => {
+    await Promise.all([
+      storage.set('content', content),
+      storage.set('services', services),
+      storage.set('slots', slots),
+      storage.set('bookings', bookings),
+      storage.set('slotsVersion', SLOTS_VERSION),
+    ]);
+    showToast("Toutes les données exportées vers Supabase ✓");
+  };
+
   if (!loaded) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--cream)' }}>
@@ -166,6 +177,7 @@ export default function App() {
             slots={slots} updateSlots={updateSlots}
             bookings={bookings} updateBookings={updateBookings}
             showToast={showToast}
+            onExportAll={exportAllToSupabase}
           />
         ) : (
           <AdminLogin

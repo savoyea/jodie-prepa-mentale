@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, Clock, Phone, Mail, X, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
 
-export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, showToast }) {
+export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, showToast, onExportAll }) {
   const menu = [
     { id: 'planning', label: 'Planning', icon: <Calendar size={16} /> },
     { id: 'services', label: 'Services', icon: <Settings size={16} /> },
@@ -32,6 +32,11 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
             <Stat label="Réservations" value={stats.upcomingBookings} />
             <Stat label="Créneaux libres" value={stats.availableSlots} />
             <Stat label="Services" value={stats.servicesCount} />
+            {onExportAll && (
+              <button onClick={onExportAll} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-widest transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                <Save size={12} /> Tout exporter vers Supabase
+              </button>
+            )}
           </div>
         </div>
       </div>
