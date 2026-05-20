@@ -8,7 +8,7 @@ export const DEFAULT_CONTENT = {
   logoFooter: '',
   favicon: '',
   heroImage: '',
-  heroStyle: 'split',
+  heroStyle: 'fullwidth',
   socialLinks: { facebook: '', instagram: '', youtube: '', twitter: '', linkedin: '' },
   heroTitle: "Deviens enfin\nvraiment toi",
   heroSubtitle: "Accompagnement en préparation mentale pour reconnecter à soi, gagner en confiance et avancer avec clarté.",
