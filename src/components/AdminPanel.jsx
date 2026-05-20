@@ -891,27 +891,91 @@ function AdminContent({ content, updateContent, showToast }) {
       <div className="p-6 rounded-2xl space-y-4" style={{ background: 'var(--cream)' }}>
         {section === 'appearance' && (
           <>
+            {/* Style du hero */}
+            <div>
+              <div className="text-xs uppercase tracking-widest mb-3 font-mono" style={{ color: 'var(--ink-soft)' }}>Style du header</div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: 'split', label: 'Séparé', desc: 'Texte à gauche, image/logo à droite', preview: (
+                    <div className="flex gap-1 h-10">
+                      <div className="flex-1 rounded flex flex-col justify-center px-1.5 gap-0.5" style={{ background: 'var(--cream-light)' }}>
+                        <div className="h-1 rounded" style={{ background: 'var(--sage-dark)', width: '60%' }} />
+                        <div className="h-0.5 rounded" style={{ background: 'var(--line)', width: '80%' }} />
+                        <div className="h-0.5 rounded" style={{ background: 'var(--line)', width: '50%' }} />
+                      </div>
+                      <div className="w-10 rounded" style={{ background: 'var(--sage-light)' }} />
+                    </div>
+                  )},
+                  { value: 'fullwidth', label: 'Plein écran', desc: 'Photo en fond, texte centré superposé', preview: (
+                    <div className="h-10 rounded flex items-center justify-center" style={{ background: 'var(--ink)' }}>
+                      <div className="text-center">
+                        <div className="h-1 rounded mx-auto mb-0.5" style={{ background: 'rgba(255,255,255,0.6)', width: 32 }} />
+                        <div className="h-1.5 rounded mx-auto" style={{ background: 'rgba(255,255,255,0.9)', width: 48 }} />
+                      </div>
+                    </div>
+                  )},
+                ].map(opt => (
+                  <button key={opt.value} onClick={() => setDraft({...draft, heroStyle: opt.value})} className="p-3 rounded-xl text-left transition-all" style={{ border: `2px solid ${draft.heroStyle === opt.value ? 'var(--sage-dark)' : 'var(--line)'}`, background: draft.heroStyle === opt.value ? 'var(--sage-light)' : 'var(--cream-light)' }}>
+                    {opt.preview}
+                    <div className="mt-2 text-xs font-mono font-semibold" style={{ color: draft.heroStyle === opt.value ? 'var(--sage-dark)' : 'var(--ink)' }}>{opt.label}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--ink-soft)' }}>{opt.desc}</div>
+                  </button>
+                ))}
+              </div>
+              {draft.heroStyle === 'fullwidth' && (
+                <div className="mt-2 text-[10px] px-3 py-2 rounded-lg" style={{ background: 'var(--sage-light)', color: 'var(--sage-dark)' }}>
+                  Le style plein écran utilise l'image du header comme fond. Sans image, un fond sombre est affiché.
+                </div>
+              )}
+            </div>
+
             <ImageUpload
               label="Logo"
               value={draft.logo || ''}
               onChange={v => setDraft({...draft, logo: v})}
               preview="logo"
-              help="Remplace le logo JOYA dans la navbar, le header et le footer. Formats recommandés : PNG transparent ou SVG."
+              help="Remplace le logo JOYA dans la navbar, le header et le footer. PNG transparent recommandé."
             />
             <ImageUpload
               label="Favicon"
               value={draft.favicon || ''}
               onChange={v => setDraft({...draft, favicon: v})}
               preview="favicon"
-              help="Icône affichée dans l'onglet du navigateur. Idéalement un carré 32×32 ou 64×64 px."
+              help="Icône dans l'onglet du navigateur. Carré 32×32 ou 64×64 px idéal."
             />
             <ImageUpload
-              label="Image du header (hero)"
+              label="Image du header"
               value={draft.heroImage || ''}
               onChange={v => setDraft({...draft, heroImage: v})}
               preview="hero"
-              help="Photo affichée dans la colonne droite du hero. Si vide, le logo est utilisé à la place."
+              help={draft.heroStyle === 'fullwidth' ? 'Fond plein écran du hero.' : 'Photo dans la colonne droite du hero. Si vide, le logo est utilisé.'}
             />
+
+            {/* Réseaux sociaux */}
+            <div className="pt-2">
+              <div className="text-xs uppercase tracking-widest mb-3 font-mono" style={{ color: 'var(--ink-soft)' }}>Réseaux sociaux</div>
+              <div className="space-y-2">
+                {[
+                  { key: 'facebook', label: 'Facebook', placeholder: 'https://facebook.com/votre-page' },
+                  { key: 'instagram', label: 'Instagram', placeholder: 'https://instagram.com/votre-compte' },
+                  { key: 'youtube', label: 'YouTube', placeholder: 'https://youtube.com/@votre-chaine' },
+                  { key: 'twitter', label: 'X / Twitter', placeholder: 'https://x.com/votre-compte' },
+                  { key: 'linkedin', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/votre-profil' },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key} className="flex items-center gap-3">
+                    <div className="text-xs font-mono w-20 flex-shrink-0" style={{ color: 'var(--ink-soft)' }}>{label}</div>
+                    <input
+                      value={draft.socialLinks?.[key] || ''}
+                      onChange={e => setDraft({ ...draft, socialLinks: { ...draft.socialLinks, [key]: e.target.value } })}
+                      placeholder={placeholder}
+                      className="flex-1 px-3 py-1.5 rounded-lg border text-sm"
+                      style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
+                    />
+                  </div>
+                ))}
+              </div>
+              <div className="text-[10px] mt-2" style={{ color: 'var(--ink-soft)' }}>Laissez vide pour masquer l'icône. Les icônes s'affichent dans le hero et le footer.</div>
+            </div>
           </>
         )}
         {section === 'hero' && (

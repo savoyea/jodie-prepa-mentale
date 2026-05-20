@@ -77,7 +77,8 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
               alt="JOYA"
               style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '0.75rem', filter: 'brightness(0) invert(1)' }}
             />
-            <p className="text-xs" style={{ color: 'rgba(252,247,248,0.6)' }}>{content.tagline}</p>
+            <p className="text-xs mb-4" style={{ color: 'rgba(252,247,248,0.6)' }}>{content.tagline}</p>
+            <SocialIcons links={content.socialLinks} light />
           </div>
           <div>
             <div className="text-xs uppercase tracking-widest mb-4 font-mono" style={{ color: 'var(--sage)' }}>Contact</div>
@@ -125,54 +126,107 @@ function ServiceCard({ service, onClick }) {
   );
 }
 
+function SocialIcons({ links, light }) {
+  const color = light ? 'rgba(255,255,255,0.75)' : 'var(--ink-soft)';
+  const hoverColor = light ? '#fff' : 'var(--ink)';
+  const platforms = [
+    { key: 'facebook', label: 'Facebook', svg: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/> },
+    { key: 'instagram', label: 'Instagram', svg: <><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></> },
+    { key: 'youtube', label: 'YouTube', svg: <><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.54C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></> },
+    { key: 'twitter', label: 'X / Twitter', svg: <path d="M18 6 6 18M6 6l12 12"/> },
+    { key: 'linkedin', label: 'LinkedIn', svg: <><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></> },
+  ];
+  const active = platforms.filter(p => links?.[p.key]);
+  if (!active.length) return null;
+  return (
+    <div className="flex items-center gap-5">
+      {active.map(p => (
+        <a key={p.key} href={links[p.key]} target="_blank" rel="noopener noreferrer" title={p.label}
+          style={{ color, transition: 'color 0.2s' }}
+          onMouseEnter={e => e.currentTarget.style.color = hoverColor}
+          onMouseLeave={e => e.currentTarget.style.color = color}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            {p.svg}
+          </svg>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function HomePage({ content, setPage, services }) {
+  const isFullwidth = content.heroStyle === 'fullwidth';
+
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(150deg, var(--cream) 0%, var(--sage-light) 100%)' }}>
-        <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center relative">
-          <div className="stagger relative z-10">
-            <div className="text-xs uppercase tracking-[0.3em] mb-6 font-mono" style={{ color: 'var(--sage-dark)' }}>● Préparation mentale</div>
-            <h1 className="font-display text-5xl md:text-7xl leading-[1.05] mb-6" style={{ color: 'var(--ink)' }}>
+      {isFullwidth ? (
+        <section className="relative overflow-hidden flex items-center" style={{ minHeight: '92vh' }}>
+          {/* Background image */}
+          {content.heroImage && (
+            <img src={content.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div className="absolute inset-0" style={{ background: content.heroImage ? 'linear-gradient(to bottom, rgba(10,5,5,0.55) 0%, rgba(10,5,5,0.45) 60%, rgba(10,5,5,0.7) 100%)' : 'linear-gradient(135deg, var(--ink) 0%, var(--olive) 100%)' }} />
+          <div className="relative z-10 w-full max-w-4xl mx-auto px-6 py-24 text-center">
+            <div className="text-xs uppercase tracking-[0.4em] mb-6 font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>{content.tagline}</div>
+            <h1 className="font-display leading-[1.0] mb-6" style={{ color: '#fff', fontSize: 'clamp(3.5rem, 10vw, 8rem)' }}>
               {content.heroTitle.split('\n').map((line, i) => (
                 <span key={i} className="block">
-                  {i === 1 ? <em style={{ fontStyle: 'italic', color: 'var(--sage-dark)' }}>{line}</em> : line}
+                  {i === 1 ? <em style={{ fontStyle: 'italic', color: 'var(--sage)' }}>{line}</em> : line}
                 </span>
               ))}
             </h1>
-            <p className="text-lg mb-8 max-w-md" style={{ color: 'var(--ink-soft)' }}>{content.heroSubtitle}</p>
-            <div className="flex flex-wrap gap-3">
-              <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+            <p className="text-lg mb-10 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>{content.heroSubtitle}</p>
+            <div className="flex flex-wrap gap-3 justify-center mb-10">
+              <button onClick={() => setPage('contact')} className="px-7 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: '#fff' }}>
                 Réserver un appel
               </button>
-              <button onClick={() => setPage('what')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all border" style={{ borderColor: 'var(--sage-dark)', color: 'var(--sage-dark)' }}>
+              <button onClick={() => setPage('what')} className="px-7 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all" style={{ border: '1px solid rgba(255,255,255,0.45)', color: '#fff' }}>
                 En savoir plus
               </button>
             </div>
+            <div className="flex justify-center">
+              <SocialIcons links={content.socialLinks} light />
+            </div>
           </div>
-          <div className="relative flex items-center justify-center">
-            {content.heroImage ? (
-              <img
-                src={content.heroImage}
-                alt="header"
-                className="w-full max-w-sm mx-auto rounded-3xl object-cover drop-shadow-xl"
-                style={{ maxHeight: '480px' }}
-              />
-            ) : (
-              <div className="relative z-10 p-8">
-                <img
-                  src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')}
-                  alt="JOYA"
-                  className="w-full max-w-sm mx-auto drop-shadow-lg"
-                  style={{ objectFit: 'contain' }}
-                />
+        </section>
+      ) : (
+        <section className="relative overflow-hidden" style={{ background: 'linear-gradient(150deg, var(--cream) 0%, var(--sage-light) 100%)' }}>
+          <div className="max-w-6xl mx-auto px-6 py-24 md:py-32 grid md:grid-cols-2 gap-12 items-center relative">
+            <div className="stagger relative z-10">
+              <div className="text-xs uppercase tracking-[0.3em] mb-6 font-mono" style={{ color: 'var(--sage-dark)' }}>● Préparation mentale</div>
+              <h1 className="font-display text-5xl md:text-7xl leading-[1.05] mb-6" style={{ color: 'var(--ink)' }}>
+                {content.heroTitle.split('\n').map((line, i) => (
+                  <span key={i} className="block">
+                    {i === 1 ? <em style={{ fontStyle: 'italic', color: 'var(--sage-dark)' }}>{line}</em> : line}
+                  </span>
+                ))}
+              </h1>
+              <p className="text-lg mb-8 max-w-md" style={{ color: 'var(--ink-soft)' }}>{content.heroSubtitle}</p>
+              <div className="flex flex-wrap gap-3 mb-6">
+                <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                  Réserver un appel
+                </button>
+                <button onClick={() => setPage('what')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all border" style={{ borderColor: 'var(--sage-dark)', color: 'var(--sage-dark)' }}>
+                  En savoir plus
+                </button>
               </div>
-            )}
-            <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: 'var(--sage)', opacity: 0.35 }}></div>
-            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full" style={{ background: 'var(--sage-dark)', opacity: 0.12 }}></div>
+              <SocialIcons links={content.socialLinks} light={false} />
+            </div>
+            <div className="relative flex items-center justify-center">
+              {content.heroImage ? (
+                <img src={content.heroImage} alt="header" className="w-full max-w-sm mx-auto rounded-3xl object-cover drop-shadow-xl" style={{ maxHeight: '480px' }} />
+              ) : (
+                <div className="relative z-10 p-8">
+                  <img src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')} alt="JOYA" className="w-full max-w-sm mx-auto drop-shadow-lg" style={{ objectFit: 'contain' }} />
+                </div>
+              )}
+              <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: 'var(--sage)', opacity: 0.35 }}></div>
+              <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full" style={{ background: 'var(--sage-dark)', opacity: 0.12 }}></div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Quote — bande cramoisie pleine largeur */}
       <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>

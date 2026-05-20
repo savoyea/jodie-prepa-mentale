@@ -6,6 +6,8 @@ export const DEFAULT_CONTENT = {
   logo: '',
   favicon: '',
   heroImage: '',
+  heroStyle: 'split',
+  socialLinks: { facebook: '', instagram: '', youtube: '', twitter: '', linkedin: '' },
   heroTitle: "Deviens enfin\nvraiment toi",
   heroSubtitle: "Accompagnement en préparation mentale pour reconnecter à soi, gagner en confiance et avancer avec clarté.",
   heroQuote: "« Le mental ne se muscle pas dans l'urgence, il se cultive dans la patience. »",
