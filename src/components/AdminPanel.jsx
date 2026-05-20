@@ -90,7 +90,7 @@ function Stat({ label, value }) {
 
 function BookingDetailModal({ booking, service, onClose, onConfirm, onCancel }) {
   if (!booking) return null;
-  const statusColor = { 'en attente': 'var(--ochre)', 'confirmé': 'var(--sage-dark)', 'annulé': 'var(--terracotta-dark)' };
+  const statusColor = { 'en attente': 'var(--ochre)', 'confirmé': 'var(--sage-dark)', 'annulé': '#6b7280' };
   const endTime = service ? addMinutes(booking.time, service.duration) : null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(42,42,38,0.55)' }} onClick={onClose}>
@@ -374,7 +374,7 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
                   const booking = bookings.find(b => b.date === s.date && b.time === s.time);
                   const svc = booking ? services.find(sv => sv.id === booking.serviceId) : null;
                   const endTime = svc ? addMinutes(s.time, svc.duration) : null;
-                  const statusColors = { 'confirmé': 'var(--sage-dark)', 'annulé': 'var(--terracotta-dark)', 'en attente': 'var(--ochre)' };
+                  const statusColors = { 'confirmé': 'var(--sage-dark)', 'annulé': '#6b7280', 'en attente': 'var(--ochre)' };
                   if (booking) {
                     return (
                       <button
@@ -435,7 +435,7 @@ function AdminPlanning({ slots, updateSlots, bookings, updateBookings, services,
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'rgba(168,181,160,0.4)' }}></div> Libre</div>
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--sage-dark)' }}></div> Confirmé</div>
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--ochre)' }}></div> En attente</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--terracotta-dark)' }}></div> Annulé</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: '#6b7280' }}></div> Annulé</div>
         <div className="flex items-center gap-2"><div className="w-3 h-3 rounded" style={{ background: 'var(--line)' }}></div> Bloqué</div>
       </div>
 
@@ -718,7 +718,7 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
   const statusColor = {
     'en attente': 'var(--ochre)',
     'confirmé': 'var(--sage-dark)',
-    'annulé': 'var(--terracotta-dark)',
+    'annulé': '#6b7280',
   };
 
   return (
