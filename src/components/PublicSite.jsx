@@ -66,7 +66,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'ethics' && <EthicsPage content={content} />}
         {page === 'about' && <AboutPage content={content} setPage={setPage} />}
         {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} appSettings={appSettings} showToast={showToast} setPage={setPage} />}
-        {page === 'contact' && <ContactPage content={content} setPage={setPage} showToast={showToast} />}
+        {page === 'contact' && <ContactPage content={content} appSettings={appSettings} setPage={setPage} showToast={showToast} />}
         {page === 'legal-mentions' && <LegalPage title="Mentions légales" html={content.legalMentions} setPage={setPage} />}
         {page === 'legal-cookies' && <LegalPage title="Politique cookies" html={content.legalCookies} setPage={setPage} />}
         {page === 'legal-privacy' && <LegalPage title="Politique de confidentialité" html={content.legalPrivacy} setPage={setPage} />}
@@ -872,15 +872,28 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
   );
 }
 
-function ContactPage({ content, setPage, showToast }) {
+function ContactPage({ content, appSettings, setPage, showToast }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name || !form.email || !form.message) {
       showToast("Veuillez renseigner votre nom, email et message");
       return;
     }
+    setSending(true);
+    if (content.contactEmail) {
+      await sendEmail({
+        to: content.contactEmail,
+        subject: `[Contact] ${form.subject || 'Nouveau message'} — ${form.name}`,
+        body: `Nom : ${form.name}\nEmail : ${form.email}\nTéléphone : ${form.phone || '—'}\nSujet : ${form.subject || '—'}\n\nMessage :\n${form.message}`,
+        fromName: content.siteName || 'Jodie Peltier',
+        replyTo: form.email,
+        testEmail: appSettings?.testEmail || undefined,
+      });
+    }
+    setSending(false);
     setSent(true);
     showToast("Message envoyé !");
   };
@@ -938,8 +951,8 @@ function ContactPage({ content, setPage, showToast }) {
                 <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="Dites-moi ce qui vous amène…" rows={6} className="w-full px-4 py-3 rounded-lg border outline-none resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
               </div>
               <div className="flex items-center gap-4 pt-2">
-                <button onClick={handleSubmit} className="px-8 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
-                  Envoyer le message
+                <button onClick={handleSubmit} disabled={sending} className="px-8 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90 disabled:opacity-50" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                  {sending ? 'Envoi…' : 'Envoyer le message'}
                 </button>
                 <span className="text-xs" style={{ color: 'var(--ink-soft)' }}>* champs obligatoires</span>
               </div>
