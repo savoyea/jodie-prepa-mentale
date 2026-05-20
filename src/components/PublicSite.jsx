@@ -474,8 +474,8 @@ function AboutPage({ content, setPage }) {
                 return (
                   <div key={f.id || i} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
                     {imgSrc && (
-                      <div style={{ height: '180px', overflow: 'hidden' }}>
-                        <img src={imgSrc} alt={f.school} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                      <div style={{ height: '160px', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 32px' }}>
+                        <img src={imgSrc} alt={f.school} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                       </div>
                     )}
                     <div className="p-6">
