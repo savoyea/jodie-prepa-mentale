@@ -1,4 +1,5 @@
 import { toLocalDateStr } from './utils.js';
+import { supabase, isSupabaseConfigured } from './lib/supabase.js';
 
 export const DEFAULT_CONTENT = {
   siteName: "Jodie Peltier",
@@ -117,12 +118,31 @@ export const DEFAULT_BOOKINGS = [
 
 export const storage = {
   async get(key, fallback) {
+    if (isSupabaseConfigured) {
+      try {
+        const { data, error } = await supabase
+          .from('settings')
+          .select('value')
+          .eq('key', key)
+          .maybeSingle();
+        if (!error && data) return data.value;
+      } catch {}
+    }
+    // Fallback localStorage
     try {
       const v = localStorage.getItem('jodie_' + key);
       return v ? JSON.parse(v) : fallback;
     } catch { return fallback; }
   },
   async set(key, value) {
+    if (isSupabaseConfigured) {
+      try {
+        await supabase
+          .from('settings')
+          .upsert({ key, value }, { onConflict: 'key' });
+      } catch {}
+    }
+    // Toujours écrire en localStorage comme cache local
     try { localStorage.setItem('jodie_' + key, JSON.stringify(value)); } catch {}
   }
 };
