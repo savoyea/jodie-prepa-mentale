@@ -66,6 +66,10 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'about' && <AboutPage content={content} setPage={setPage} />}
         {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} showToast={showToast} setPage={setPage} />}
         {page === 'contact' && <ContactPage content={content} setPage={setPage} showToast={showToast} />}
+        {page === 'legal-mentions' && <LegalPage title="Mentions légales" html={content.legalMentions} setPage={setPage} />}
+        {page === 'legal-cookies' && <LegalPage title="Politique cookies" html={content.legalCookies} setPage={setPage} />}
+        {page === 'legal-privacy' && <LegalPage title="Politique de confidentialité" html={content.legalPrivacy} setPage={setPage} />}
+        {page === 'legal-terms' && <LegalPage title="Conditions d'utilisation" html={content.legalTerms} setPage={setPage} />}
       </main>
 
       {/* Footer cramoisie */}
@@ -99,8 +103,22 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
             </div>
           </div>
         </div>
-        <div className="max-w-6xl mx-auto px-6 mt-10 pt-6 text-xs text-center" style={{ borderTop: '1px solid rgba(252,247,248,0.15)', color: 'rgba(252,247,248,0.4)' }}>
-          © {new Date().getFullYear()} {content.siteName} — Tous droits réservés
+        <div className="max-w-6xl mx-auto px-6 mt-10 pt-6" style={{ borderTop: '1px solid rgba(252,247,248,0.15)' }}>
+          <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 mb-3">
+            {[
+              { id: 'legal-mentions', label: 'Mentions légales' },
+              { id: 'legal-cookies', label: 'Politique cookies' },
+              { id: 'legal-privacy', label: 'Confidentialité' },
+              { id: 'legal-terms', label: "Conditions d'utilisation" },
+            ].map(l => (
+              <button key={l.id} onClick={() => setPage(l.id)} className="text-xs hover:underline transition-all" style={{ color: 'rgba(252,247,248,0.45)' }}>
+                {l.label}
+              </button>
+            ))}
+          </div>
+          <div className="text-xs text-center" style={{ color: 'rgba(252,247,248,0.3)' }}>
+            © {new Date().getFullYear()} {content.siteName} — Tous droits réservés
+          </div>
         </div>
       </footer>
     </div>
@@ -313,7 +331,7 @@ function WhatIsPage({ content, setPage }) {
         <div className="max-w-4xl mx-auto">
           <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Comprendre</div>
           <h1 className="font-display text-5xl md:text-6xl mb-6" style={{ color: 'var(--cream)' }}>{content.whatIsTitle}</h1>
-          <p className="text-lg leading-relaxed max-w-2xl" style={{ color: 'rgba(252,247,248,0.75)' }}>{content.whatIsText}</p>
+          <div className="text-lg leading-relaxed max-w-2xl legal-prose" style={{ color: 'rgba(252,247,248,0.75)' }} dangerouslySetInnerHTML={{ __html: content.whatIsText }} />
         </div>
       </div>
 
@@ -794,6 +812,42 @@ function ContactPage({ content, setPage, showToast }) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LegalPage({ title, html, setPage }) {
+  return (
+    <div>
+      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setPage('home')} className="text-xs font-mono uppercase tracking-widest mb-6 block hover:underline" style={{ color: 'rgba(255,255,255,0.5)' }}>← Accueil</button>
+          <h1 className="font-display text-4xl md:text-5xl" style={{ color: 'var(--cream)' }}>{title}</h1>
+        </div>
+      </div>
+      <div className="max-w-3xl mx-auto px-6 py-16">
+        <div
+          className="legal-prose"
+          style={{ lineHeight: 1.8, fontSize: '0.95rem' }}
+          dangerouslySetInnerHTML={{ __html: html || '<p>Contenu à venir.</p>' }}
+        />
+      </div>
+      <style>{`
+        .legal-prose h2 { font-family: var(--font-display, Georgia, serif); font-size: 1.75rem; margin: 2rem 0 0.75rem; }
+        .legal-prose h3 { font-family: var(--font-display, Georgia, serif); font-size: 1.25rem; margin: 1.5rem 0 0.5rem; color: var(--sage-dark); }
+        .legal-prose p { margin-bottom: 1rem; color: var(--ink-soft); }
+        .legal-prose strong { color: var(--ink); }
+        .legal-prose ul, .legal-prose ol { margin: 0.75rem 0 1rem 1.5rem; color: var(--ink-soft); }
+        .legal-prose li { margin-bottom: 0.25rem; }
+        .legal-prose a { color: var(--sage-dark); text-decoration: underline; }
+        .legal-prose em { font-style: italic; }
+        .prose-editor h2 { font-size: 1.3em; font-weight: bold; margin: 0.5em 0; }
+        .prose-editor h3 { font-size: 1.1em; font-weight: bold; margin: 0.5em 0; color: var(--sage-dark); }
+        .prose-editor ul { list-style: disc; padding-left: 1.5em; }
+        .prose-editor ol { list-style: decimal; padding-left: 1.5em; }
+        .prose-editor p { margin-bottom: 0.5em; }
+        .prose-editor [data-placeholder]:empty::before { content: attr(data-placeholder); color: var(--ink-soft); opacity: 0.5; pointer-events: none; }
+      `}</style>
     </div>
   );
 }

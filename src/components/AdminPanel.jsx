@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, Clock, Phone, Mail, X, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
 
@@ -693,11 +693,70 @@ function ImageUpload({ label, value, onChange, preview, help }) {
   );
 }
 
-function Field({ label, value, onChange, multiline, help }) {
+function RichTextEditor({ value, onChange, placeholder }) {
+  const ref = useRef(null);
+  const internal = useRef(false);
+
+  useEffect(() => {
+    if (ref.current && !internal.current) {
+      ref.current.innerHTML = value || '';
+    }
+    internal.current = false;
+  }, [value]);
+
+  const exec = (cmd, val = null) => {
+    ref.current.focus();
+    document.execCommand(cmd, false, val);
+    internal.current = true;
+    onChange(ref.current.innerHTML);
+  };
+
+  const tools = [
+    { label: 'B', title: 'Gras', cmd: 'bold', style: { fontWeight: 'bold' } },
+    { label: 'I', title: 'Italique', cmd: 'italic', style: { fontStyle: 'italic' } },
+    { label: 'H2', title: 'Titre 2', cmd: 'formatBlock', val: 'h2' },
+    { label: 'H3', title: 'Titre 3', cmd: 'formatBlock', val: 'h3' },
+    { label: '¶', title: 'Paragraphe', cmd: 'formatBlock', val: 'p' },
+    { label: '• Liste', title: 'Liste à puces', cmd: 'insertUnorderedList' },
+    { label: '1. Liste', title: 'Liste numérotée', cmd: 'insertOrderedList' },
+  ];
+
+  return (
+    <div style={{ border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ display: 'flex', gap: 3, padding: '6px 8px', background: 'var(--cream)', borderBottom: '1px solid var(--line)', flexWrap: 'wrap' }}>
+        {tools.map(t => (
+          <button
+            key={t.cmd + (t.val || '')}
+            type="button"
+            title={t.title}
+            onMouseDown={e => { e.preventDefault(); exec(t.cmd, t.val || null); }}
+            className="px-2 py-0.5 rounded text-xs font-mono transition-all hover:opacity-70"
+            style={{ background: 'var(--cream-light)', border: '1px solid var(--line)', ...t.style }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        data-placeholder={placeholder}
+        onInput={() => { internal.current = true; onChange(ref.current.innerHTML); }}
+        className="prose-editor outline-none"
+        style={{ padding: '12px 14px', minHeight: '140px', background: 'var(--cream-light)', fontSize: 14, lineHeight: 1.6 }}
+      />
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, multiline, rich, help }) {
   return (
     <div>
       <div className="text-xs uppercase tracking-widest mb-1.5 font-mono" style={{ color: 'var(--ink-soft)' }}>{label}</div>
-      {multiline ? (
+      {rich ? (
+        <RichTextEditor value={value} onChange={onChange} placeholder={label} />
+      ) : multiline ? (
         <textarea value={value} onChange={e => onChange(e.target.value)} rows={3} className="w-full px-3 py-2 rounded-lg border resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
       ) : (
         <input value={value} onChange={e => onChange(e.target.value)} className="w-full px-3 py-2 rounded-lg border" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
@@ -932,6 +991,7 @@ function AdminContent({ content, updateContent, showToast }) {
     { id: 'ethics', label: 'Éthique' },
     { id: 'about', label: 'Qui suis-je' },
     { id: 'contact', label: 'Contact' },
+    { id: 'legal', label: 'Pages légales' },
   ];
 
   const save = () => {
@@ -1081,7 +1141,7 @@ function AdminContent({ content, updateContent, showToast }) {
         {section === 'what' && (
           <>
             <Field label="Titre" value={draft.whatIsTitle} onChange={v => setDraft({...draft, whatIsTitle: v})} />
-            <Field label="Texte de présentation" value={draft.whatIsText} onChange={v => setDraft({...draft, whatIsText: v})} multiline />
+            <Field label="Texte de présentation" value={draft.whatIsText} onChange={v => setDraft({...draft, whatIsText: v})} rich />
             <Field label="Titre — Pour qui ?" value={draft.forWhomTitle} onChange={v => setDraft({...draft, forWhomTitle: v})} />
             <div className="text-xs uppercase tracking-widest font-mono pt-4" style={{ color: 'var(--ink-soft)' }}>Publics concernés</div>
             {draft.forWhomItems.map((item, i) => (
@@ -1129,6 +1189,18 @@ function AdminContent({ content, updateContent, showToast }) {
             <Field label="Téléphone" value={draft.contactPhone} onChange={v => setDraft({...draft, contactPhone: v})} />
             <Field label="Email" value={draft.contactEmail} onChange={v => setDraft({...draft, contactEmail: v})} />
             <Field label="Lieu" value={draft.contactLocation} onChange={v => setDraft({...draft, contactLocation: v})} />
+          </>
+        )}
+        {section === 'legal' && (
+          <>
+            <div className="text-xs font-mono uppercase tracking-widest mb-1" style={{ color: 'var(--ink-soft)' }}>Mentions légales</div>
+            <RichTextEditor value={draft.legalMentions || ''} onChange={v => setDraft({...draft, legalMentions: v})} placeholder="Mentions légales…" />
+            <div className="text-xs font-mono uppercase tracking-widest mb-1 pt-4" style={{ color: 'var(--ink-soft)' }}>Politique cookies</div>
+            <RichTextEditor value={draft.legalCookies || ''} onChange={v => setDraft({...draft, legalCookies: v})} placeholder="Politique cookies…" />
+            <div className="text-xs font-mono uppercase tracking-widest mb-1 pt-4" style={{ color: 'var(--ink-soft)' }}>Politique de confidentialité</div>
+            <RichTextEditor value={draft.legalPrivacy || ''} onChange={v => setDraft({...draft, legalPrivacy: v})} placeholder="Politique de confidentialité…" />
+            <div className="text-xs font-mono uppercase tracking-widest mb-1 pt-4" style={{ color: 'var(--ink-soft)' }}>Conditions d'utilisation</div>
+            <RichTextEditor value={draft.legalTerms || ''} onChange={v => setDraft({...draft, legalTerms: v})} placeholder="Conditions d'utilisation…" />
           </>
         )}
       </div>
