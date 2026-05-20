@@ -614,7 +614,7 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
     setSendError(null);
     try {
       if (isSupabaseConfigured) {
-        const { error } = await supabase.functions.invoke('send-email', {
+        const { data, error } = await supabase.functions.invoke('send-email', {
           body: {
             to: booking.clientEmail,
             toName: booking.clientName,
@@ -625,6 +625,7 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
           },
         });
         if (error) throw new Error(error.message);
+        if (data && !data.success) throw new Error(data.error);
       } else {
         // Fallback mailto si Supabase non configuré
         window.open(`mailto:${booking.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');

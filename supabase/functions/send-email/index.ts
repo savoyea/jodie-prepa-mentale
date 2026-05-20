@@ -14,16 +14,16 @@ serve(async (req) => {
     const { to, toName, subject, body, fromName, replyTo } = await req.json();
 
     if (!to || !subject || !body) {
-      return new Response(JSON.stringify({ error: 'Champs manquants : to, subject, body' }), {
-        status: 400,
+      return new Response(JSON.stringify({ success: false, error: 'Champs manquants : to, subject, body' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     if (!RESEND_API_KEY) {
-      return new Response(JSON.stringify({ error: 'RESEND_API_KEY non configurée' }), {
-        status: 500,
+      return new Response(JSON.stringify({ success: false, error: 'RESEND_API_KEY non configurée' }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -46,8 +46,9 @@ serve(async (req) => {
     const data = await res.json();
 
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: data }), {
-        status: res.status,
+      const detail = data?.message || data?.name || JSON.stringify(data);
+      return new Response(JSON.stringify({ success: false, error: `Resend ${res.status}: ${detail}` }), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -56,8 +57,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    return new Response(JSON.stringify({ success: false, error: err.message }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
