@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, Clock, Phone, Mail, X, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
+import { supabase, isSupabaseConfigured } from '../lib/supabase.js';
 
 export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, showToast, onExportAll }) {
   const menu = [
@@ -595,35 +596,60 @@ function fillTemplate(tpl, booking, service) {
 
 function BookingResponseModal({ action, booking, service, content, onConfirm, onClose }) {
   const templates = {
-    confirmé:  { subject: content.emailSubjectConfirm, body: content.emailTemplateConfirm },
-    annulé:    { subject: content.emailSubjectCancel,  body: content.emailTemplateCancel  },
-    supprimé:  { subject: content.emailSubjectDelete,  body: content.emailTemplateDelete  },
+    confirmé: { subject: content.emailSubjectConfirm, body: content.emailTemplateConfirm },
+    annulé:   { subject: content.emailSubjectCancel,  body: content.emailTemplateCancel  },
+    supprimé: { subject: content.emailSubjectDelete,  body: content.emailTemplateDelete  },
   };
   const tpl = templates[action] || {};
   const [subject, setSubject] = useState(fillTemplate(tpl.subject, booking, service));
   const [body, setBody] = useState(fillTemplate(tpl.body, booking, service));
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
 
   const labels = { confirmé: 'Confirmer', annulé: 'Annuler', supprimé: 'Supprimer' };
   const colors = { confirmé: 'var(--sage-dark)', annulé: 'var(--ochre)', supprimé: 'var(--terracotta-dark)' };
 
-  const sendAndAct = () => {
-    const mailto = `mailto:${booking.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailto, '_blank');
-    onConfirm();
+  const sendAndAct = async () => {
+    setSending(true);
+    setSendError(null);
+    try {
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.functions.invoke('send-email', {
+          body: {
+            to: booking.clientEmail,
+            toName: booking.clientName,
+            subject,
+            body,
+            fromName: content.siteName || 'Jodie Peltier',
+            replyTo: content.contactEmail || undefined,
+          },
+        });
+        if (error) throw new Error(error.message);
+      } else {
+        // Fallback mailto si Supabase non configuré
+        window.open(`mailto:${booking.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
+      }
+      onConfirm();
+    } catch (err) {
+      setSendError("Erreur d'envoi : " + err.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,15,16,0.5)' }}>
       <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: 'var(--cream)' }}>
         <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'var(--sage-dark)' }}>
-          <div className="font-display text-xl" style={{ color: 'var(--cream)' }}>
-            Répondre à {booking.clientName}
-          </div>
+          <div className="font-display text-xl" style={{ color: 'var(--cream)' }}>Répondre à {booking.clientName}</div>
           <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.6)' }}><X size={18} /></button>
         </div>
         <div className="p-6 space-y-3">
-          <div className="text-xs font-mono px-3 py-2 rounded-lg" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
-            À : <strong>{booking.clientEmail}</strong>
+          <div className="text-xs font-mono px-3 py-2 rounded-lg flex items-center justify-between" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
+            <span>À : <strong>{booking.clientEmail}</strong></span>
+            {isSupabaseConfigured
+              ? <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>Envoi automatique</span>
+              : <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#854d0e' }}>Via votre client mail</span>}
           </div>
           <div>
             <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Sujet</div>
@@ -633,9 +659,10 @@ function BookingResponseModal({ action, booking, service, content, onConfirm, on
             <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Message</div>
             <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} className="w-full px-3 py-2 rounded-lg border outline-none text-sm resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
           </div>
+          {sendError && <div className="text-xs px-3 py-2 rounded-lg" style={{ background: '#fee2e2', color: '#991b1b' }}>{sendError}</div>}
           <div className="flex gap-2 pt-1">
-            <button onClick={sendAndAct} className="flex-1 px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: colors[action], color: 'var(--cream)' }}>
-              <Mail size={12} className="inline mr-1.5" />Envoyer + {labels[action]}
+            <button onClick={sendAndAct} disabled={sending} className="flex-1 px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-widest disabled:opacity-60" style={{ background: colors[action], color: 'var(--cream)' }}>
+              {sending ? 'Envoi…' : <><Mail size={12} className="inline mr-1.5" />Envoyer + {labels[action]}</>}
             </button>
             <button onClick={onConfirm} className="px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
               {labels[action]} sans message
