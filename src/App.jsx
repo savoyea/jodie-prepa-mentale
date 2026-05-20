@@ -41,6 +41,13 @@ export default function App() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (!content.favicon) return;
+    let link = document.querySelector("link[rel~='icon']");
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    link.href = content.favicon;
+  }, [content.favicon]);
+
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);

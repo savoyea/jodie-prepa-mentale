@@ -655,6 +655,44 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
   );
 }
 
+function ImageUpload({ label, value, onChange, preview, help }) {
+  const handleFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => onChange(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div>
+      <div className="text-xs uppercase tracking-widest mb-2 font-mono" style={{ color: 'var(--ink-soft)' }}>{label}</div>
+      <div className="flex items-center gap-4">
+        {value ? (
+          preview === 'logo' ? (
+            <img src={value} alt="logo" style={{ height: '48px', width: 'auto', objectFit: 'contain', border: '1px solid var(--line)', borderRadius: 8, padding: 4, background: '#fff' }} />
+          ) : preview === 'favicon' ? (
+            <img src={value} alt="favicon" className="w-10 h-10 rounded object-contain" style={{ border: '1px solid var(--line)', background: '#fff' }} />
+          ) : (
+            <img src={value} alt="header" className="w-24 h-16 rounded-lg object-cover" style={{ border: '1px solid var(--line)' }} />
+          )
+        ) : (
+          <div className="w-16 h-10 rounded-lg flex items-center justify-center text-[10px] font-mono" style={{ background: 'var(--sage-light)', color: 'var(--ink-soft)' }}>Aucune</div>
+        )}
+        <div className="flex flex-col gap-1">
+          <label className="cursor-pointer px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: 'var(--ink)', color: 'var(--cream)' }}>
+            Choisir
+            <input type="file" accept="image/*" onChange={handleFile} className="hidden" />
+          </label>
+          {value && (
+            <button onClick={() => onChange('')} className="text-xs font-mono uppercase tracking-widest underline text-left" style={{ color: 'var(--terracotta-dark)' }}>Supprimer</button>
+          )}
+        </div>
+      </div>
+      {help && <div className="text-[10px] mt-2" style={{ color: 'var(--ink-soft)' }}>{help}</div>}
+    </div>
+  );
+}
+
 function Field({ label, value, onChange, multiline, help }) {
   return (
     <div>
@@ -807,6 +845,7 @@ function AdminContent({ content, updateContent, showToast }) {
   useEffect(() => { setDraft(content); }, [content]);
 
   const sections = [
+    { id: 'appearance', label: 'Apparence' },
     { id: 'hero', label: 'Accueil' },
     { id: 'what', label: "C'est quoi" },
     { id: 'ethics', label: 'Éthique' },
@@ -850,6 +889,31 @@ function AdminContent({ content, updateContent, showToast }) {
       </div>
 
       <div className="p-6 rounded-2xl space-y-4" style={{ background: 'var(--cream)' }}>
+        {section === 'appearance' && (
+          <>
+            <ImageUpload
+              label="Logo"
+              value={draft.logo || ''}
+              onChange={v => setDraft({...draft, logo: v})}
+              preview="logo"
+              help="Remplace le logo JOYA dans la navbar, le header et le footer. Formats recommandés : PNG transparent ou SVG."
+            />
+            <ImageUpload
+              label="Favicon"
+              value={draft.favicon || ''}
+              onChange={v => setDraft({...draft, favicon: v})}
+              preview="favicon"
+              help="Icône affichée dans l'onglet du navigateur. Idéalement un carré 32×32 ou 64×64 px."
+            />
+            <ImageUpload
+              label="Image du header (hero)"
+              value={draft.heroImage || ''}
+              onChange={v => setDraft({...draft, heroImage: v})}
+              preview="hero"
+              help="Photo affichée dans la colonne droite du hero. Si vide, le logo est utilisé à la place."
+            />
+          </>
+        )}
         {section === 'hero' && (
           <>
             <Field label="Nom du site" value={draft.siteName} onChange={v => setDraft({...draft, siteName: v})} />

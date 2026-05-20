@@ -19,7 +19,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <button onClick={() => setPage('home')} className="flex items-center">
             <img
-              src={import.meta.env.BASE_URL + 'logo-crop.png'}
+              src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')}
               alt="JOYA – Le mental au service de ta réussite"
               style={{ height: '52px', width: 'auto', objectFit: 'contain' }}
             />
@@ -73,7 +73,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         <div className="max-w-6xl mx-auto px-6 grid md:grid-cols-3 gap-10 text-sm">
           <div>
             <img
-              src={import.meta.env.BASE_URL + 'logo-crop.png'}
+              src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')}
               alt="JOYA"
               style={{ height: '60px', width: 'auto', objectFit: 'contain', marginBottom: '0.75rem', filter: 'brightness(0) invert(1)' }}
             />
@@ -151,15 +151,23 @@ function HomePage({ content, setPage, services }) {
             </div>
           </div>
           <div className="relative flex items-center justify-center">
-            {/* Logo JOYA en grand dans le hero */}
-            <div className="relative z-10 p-8">
+            {content.heroImage ? (
               <img
-                src={import.meta.env.BASE_URL + 'logo-crop.png'}
-                alt="JOYA"
-                className="w-full max-w-sm mx-auto drop-shadow-lg"
-                style={{ objectFit: 'contain' }}
+                src={content.heroImage}
+                alt="header"
+                className="w-full max-w-sm mx-auto rounded-3xl object-cover drop-shadow-xl"
+                style={{ maxHeight: '480px' }}
               />
-            </div>
+            ) : (
+              <div className="relative z-10 p-8">
+                <img
+                  src={content.logo || (import.meta.env.BASE_URL + 'logo-crop.png')}
+                  alt="JOYA"
+                  className="w-full max-w-sm mx-auto drop-shadow-lg"
+                  style={{ objectFit: 'contain' }}
+                />
+              </div>
+            )}
             <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full" style={{ background: 'var(--sage)', opacity: 0.35 }}></div>
             <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full" style={{ background: 'var(--sage-dark)', opacity: 0.12 }}></div>
           </div>
