@@ -63,7 +63,7 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
         <main className="fade-in" key={adminPage}>
           {adminPage === 'planning' && <AdminPlanning slots={slots} updateSlots={updateSlots} bookings={bookings} updateBookings={updateBookings} services={services} showToast={showToast} />}
           {adminPage === 'services' && <AdminServices services={services} updateServices={updateServices} showToast={showToast} />}
-          {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} />}
+          {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} />}
           {adminPage === 'content' && <AdminContent content={content} updateContent={updateContent} showToast={showToast} />}
         </main>
       </div>
@@ -582,23 +582,93 @@ function AdminServices({ services, updateServices, showToast }) {
   );
 }
 
-function AdminBookings({ bookings, updateBookings, services, slots, updateSlots, showToast }) {
+function fillTemplate(tpl, booking, service) {
+  const prenom = (booking.clientName || '').split(' ')[0];
+  const date = booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '—';
+  return (tpl || '')
+    .replace(/{prenom}/g, prenom)
+    .replace(/{nom}/g, booking.clientName || '')
+    .replace(/{date}/g, date)
+    .replace(/{heure}/g, booking.time || '—')
+    .replace(/{service}/g, service?.name || '');
+}
+
+function BookingResponseModal({ action, booking, service, content, onConfirm, onClose }) {
+  const templates = {
+    confirmé:  { subject: content.emailSubjectConfirm, body: content.emailTemplateConfirm },
+    annulé:    { subject: content.emailSubjectCancel,  body: content.emailTemplateCancel  },
+    supprimé:  { subject: content.emailSubjectDelete,  body: content.emailTemplateDelete  },
+  };
+  const tpl = templates[action] || {};
+  const [subject, setSubject] = useState(fillTemplate(tpl.subject, booking, service));
+  const [body, setBody] = useState(fillTemplate(tpl.body, booking, service));
+
+  const labels = { confirmé: 'Confirmer', annulé: 'Annuler', supprimé: 'Supprimer' };
+  const colors = { confirmé: 'var(--sage-dark)', annulé: 'var(--ochre)', supprimé: 'var(--terracotta-dark)' };
+
+  const sendAndAct = () => {
+    const mailto = `mailto:${booking.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto, '_blank');
+    onConfirm();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,15,16,0.5)' }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: 'var(--cream)' }}>
+        <div className="px-6 py-4 flex items-center justify-between" style={{ background: 'var(--sage-dark)' }}>
+          <div className="font-display text-xl" style={{ color: 'var(--cream)' }}>
+            Répondre à {booking.clientName}
+          </div>
+          <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.6)' }}><X size={18} /></button>
+        </div>
+        <div className="p-6 space-y-3">
+          <div className="text-xs font-mono px-3 py-2 rounded-lg" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
+            À : <strong>{booking.clientEmail}</strong>
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Sujet</div>
+            <input value={subject} onChange={e => setSubject(e.target.value)} className="w-full px-3 py-2 rounded-lg border outline-none text-sm" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Message</div>
+            <textarea value={body} onChange={e => setBody(e.target.value)} rows={7} className="w-full px-3 py-2 rounded-lg border outline-none text-sm resize-none" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button onClick={sendAndAct} className="flex-1 px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-widest" style={{ background: colors[action], color: 'var(--cream)' }}>
+              <Mail size={12} className="inline mr-1.5" />Envoyer + {labels[action]}
+            </button>
+            <button onClick={onConfirm} className="px-4 py-2.5 rounded-full text-xs font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>
+              {labels[action]} sans message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminBookings({ bookings, updateBookings, services, slots, updateSlots, showToast, content }) {
   const [filter, setFilter] = useState('all');
+  const [pending, setPending] = useState(null); // { booking, action, service }
 
   const getService = (id) => services.find(s => s.id === id);
 
-  const setStatus = (id, status) => {
-    updateBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
-    showToast(`Statut mis à jour : ${status}`);
+  const askAction = (booking, action) => {
+    setPending({ booking, action, service: getService(booking.serviceId) });
   };
 
-  const removeBooking = (id) => {
+  const doStatus = (id, status) => {
+    updateBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+    showToast(`Statut mis à jour : ${status}`);
+    setPending(null);
+  };
+
+  const doRemove = (id) => {
     const booking = bookings.find(b => b.id === id);
-    if (booking) {
-      updateSlots(slots.map(s => (s.date === booking.date && s.time === booking.time) ? { ...s, available: true } : s));
-    }
+    if (booking) updateSlots(slots.map(s => (s.date === booking.date && s.time === booking.time) ? { ...s, available: true } : s));
     updateBookings(bookings.filter(b => b.id !== id));
     showToast("Réservation supprimée");
+    setPending(null);
   };
 
   const filtered = filter === 'all' ? bookings : bookings.filter(b => b.status === filter);
@@ -624,9 +694,7 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
 
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center rounded-2xl" style={{ background: 'var(--cream)', color: 'var(--ink-soft)' }}>
-            Aucune réservation
-          </div>
+          <div className="p-8 text-center rounded-2xl" style={{ background: 'var(--cream)', color: 'var(--ink-soft)' }}>Aucune réservation</div>
         ) : filtered.map(b => {
           const service = getService(b.serviceId);
           return (
@@ -634,12 +702,10 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-1">
                   <div className="font-display text-xl">{b.clientName}</div>
-                  <div className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: statusColor[b.status], color: 'var(--cream)' }}>
-                    {b.status}
-                  </div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full" style={{ background: statusColor[b.status], color: 'var(--cream)' }}>{b.status}</div>
                 </div>
                 <div className="text-xs font-mono mb-2" style={{ color: 'var(--ink-soft)' }}>
-                  {service?.name} · {b.date ? new Date(b.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'} à {b.time}
+                  {service?.name} · {b.date ? new Date(b.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '—'} à {b.time}
                 </div>
                 <div className="text-xs space-y-0.5" style={{ color: 'var(--ink-soft)' }}>
                   <div className="flex items-center gap-2"><Mail size={11} /> {b.clientEmail}</div>
@@ -648,14 +714,28 @@ function AdminBookings({ bookings, updateBookings, services, slots, updateSlots,
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {b.status !== 'confirmé' && <button onClick={() => setStatus(b.id, 'confirmé')} className="px-3 py-1.5 text-xs rounded-full font-mono uppercase tracking-widest" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>Confirmer</button>}
-                {b.status !== 'annulé' && <button onClick={() => setStatus(b.id, 'annulé')} className="px-3 py-1.5 text-xs rounded-full font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>Annuler</button>}
-                <button onClick={() => removeBooking(b.id)} className="p-1.5 rounded-full" style={{ color: 'var(--terracotta-dark)' }}><Trash2 size={14} /></button>
+                {b.status !== 'confirmé' && <button onClick={() => askAction(b, 'confirmé')} className="px-3 py-1.5 text-xs rounded-full font-mono uppercase tracking-widest" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>Confirmer</button>}
+                {b.status !== 'annulé' && <button onClick={() => askAction(b, 'annulé')} className="px-3 py-1.5 text-xs rounded-full font-mono uppercase tracking-widest border" style={{ borderColor: 'var(--line)', color: 'var(--ink-soft)' }}>Annuler</button>}
+                <button onClick={() => askAction(b, 'supprimé')} className="p-1.5 rounded-full" style={{ color: 'var(--terracotta-dark)' }}><Trash2 size={14} /></button>
               </div>
             </div>
           );
         })}
       </div>
+
+      {pending && (
+        <BookingResponseModal
+          action={pending.action}
+          booking={pending.booking}
+          service={pending.service}
+          content={content}
+          onConfirm={() => {
+            if (pending.action === 'supprimé') doRemove(pending.booking.id);
+            else doStatus(pending.booking.id, pending.action);
+          }}
+          onClose={() => setPending(null)}
+        />
+      )}
     </div>
   );
 }
@@ -997,6 +1077,7 @@ function AdminContent({ content, updateContent, showToast }) {
     { id: 'ethics', label: 'Éthique' },
     { id: 'about', label: 'Qui suis-je' },
     { id: 'contact', label: 'Contact' },
+    { id: 'notifications', label: 'Notifications' },
     { id: 'legal', label: 'Pages légales' },
   ];
 
@@ -1195,6 +1276,22 @@ function AdminContent({ content, updateContent, showToast }) {
             <Field label="Téléphone" value={draft.contactPhone} onChange={v => setDraft({...draft, contactPhone: v})} />
             <Field label="Email" value={draft.contactEmail} onChange={v => setDraft({...draft, contactEmail: v})} />
             <Field label="Lieu" value={draft.contactLocation} onChange={v => setDraft({...draft, contactLocation: v})} />
+          </>
+        )}
+        {section === 'notifications' && (
+          <>
+            <div className="p-3 rounded-xl text-xs mb-2" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}>
+              Placeholders disponibles : <code className="font-mono">{'{prenom}'}</code> <code className="font-mono">{'{nom}'}</code> <code className="font-mono">{'{date}'}</code> <code className="font-mono">{'{heure}'}</code> <code className="font-mono">{'{service}'}</code>
+            </div>
+            <div className="text-xs font-mono uppercase tracking-widest pt-2 pb-1" style={{ color: 'var(--sage-dark)' }}>✓ Confirmation</div>
+            <Field label="Sujet" value={draft.emailSubjectConfirm || ''} onChange={v => setDraft({...draft, emailSubjectConfirm: v})} />
+            <Field label="Corps du message" value={draft.emailTemplateConfirm || ''} onChange={v => setDraft({...draft, emailTemplateConfirm: v})} multiline />
+            <div className="text-xs font-mono uppercase tracking-widest pt-4 pb-1" style={{ color: 'var(--ochre)' }}>✕ Annulation</div>
+            <Field label="Sujet" value={draft.emailSubjectCancel || ''} onChange={v => setDraft({...draft, emailSubjectCancel: v})} />
+            <Field label="Corps du message" value={draft.emailTemplateCancel || ''} onChange={v => setDraft({...draft, emailTemplateCancel: v})} multiline />
+            <div className="text-xs font-mono uppercase tracking-widest pt-4 pb-1" style={{ color: 'var(--terracotta-dark)' }}>🗑 Suppression</div>
+            <Field label="Sujet" value={draft.emailSubjectDelete || ''} onChange={v => setDraft({...draft, emailSubjectDelete: v})} />
+            <Field label="Corps du message" value={draft.emailTemplateDelete || ''} onChange={v => setDraft({...draft, emailTemplateDelete: v})} multiline />
           </>
         )}
         {section === 'google' && (
