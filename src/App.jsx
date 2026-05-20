@@ -8,7 +8,7 @@ import AdminPanel from './components/AdminPanel.jsx';
 export default function App() {
   const [view, setView] = useState('public');
   const [page, setPage] = useState('home');
-  const [adminPage, setAdminPage] = useState('planning');
+  const [adminPage, setAdminPage] = useState('dashboard');
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [services, setServices] = useState(DEFAULT_SERVICES);
   const [slots, setSlots] = useState([]);
