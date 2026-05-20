@@ -61,14 +61,14 @@ export const DEFAULT_CONTENT = {
   ],
   ethicsImage: '',
   ethicsSchema: '',
-  ethicsTitle: "Éthique et déontologie",
-  ethicsText: "Mon accompagnement repose sur un cadre clair et respectueux. La préparation mentale n'est ni de la psychothérapie ni du coaching de vie : elle s'inscrit dans une démarche complémentaire et orientée vers l'objectif.",
+  ethicsTitle: "La société française de psychologie du sport (SFPS)",
+  ethicsText: "La SFPS a établi une charte éthique et de déontologie de la pratique, à laquelle ses membres s'engagent à adhérer. Cependant, qu'on en soit membre ou non, cette charte doit être respectée, et je m'engage personnellement à la respecter.",
   ethicsPrinciples: [
-    { title: "Confidentialité", text: "Tout ce qui est partagé en séance reste strictement confidentiel. Aucune information n'est transmise sans accord explicite." },
-    { title: "Bienveillance", text: "Un espace sans jugement, où chaque personne avance à son rythme et selon ses propres ressources." },
+    { title: "Consentement", text: "Toute démarche d'accompagnement repose sur le consentement libre et éclairé de la personne." },
+    { title: "Opérer dans l'intérêt de la personne", text: "L'accompagnement est centré sur le bien-être et les objectifs propres de chaque individu." },
+    { title: "Secret professionnel", text: "Tout ce qui est partagé en séance reste strictement confidentiel. Aucune information n'est transmise sans accord explicite." },
     { title: "Compétence", text: "Une formation continue et l'orientation vers un professionnel adapté quand la situation dépasse mon champ d'intervention." },
     { title: "Respect", text: "Respect de la personne, de ses choix, de ses valeurs et de son intégrité physique et morale." },
-    { title: "Transparence", text: "Objectifs, méthodes, durée et tarifs sont clairement annoncés dès le premier échange." }
   ],
   testimonials: [
     { id: 't1', name: 'Marie L.', role: 'Nageuse compétition', text: "Grâce à Jodie, j'ai appris à gérer mes émotions avant les compétitions. Ma progression mentale a été aussi importante que ma progression technique.", photo: '' },

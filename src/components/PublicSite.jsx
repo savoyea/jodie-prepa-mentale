@@ -364,20 +364,15 @@ function EthicsPage({ content }) {
       {/* Corps — texte gauche, image droite */}
       <div className="px-6 py-16" style={{ background: 'var(--cream)' }}>
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-start">
-          {/* Texte */}
-          <div>
-            <p className="text-base leading-relaxed mb-10" style={{ color: 'var(--ink-soft)' }}>{content.ethicsText}</p>
-            <div className="space-y-3 stagger">
+          {/* Bloc SFPS */}
+          <div className="rounded-2xl px-10 py-12 flex flex-col items-center text-center" style={{ background: 'var(--sage-dark)' }}>
+            <h2 className="font-display text-3xl md:text-4xl mb-6 leading-tight" style={{ color: 'var(--cream)' }}>{content.ethicsTitle}</h2>
+            <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)', maxWidth: '38ch' }}>{content.ethicsText}</p>
+            <div className="flex flex-col items-center gap-4 w-full">
               {content.ethicsPrinciples.map((p, i) => (
-                <div key={i} className="flex gap-0 rounded-2xl overflow-hidden" style={{ border: '1.5px solid var(--line)' }}>
-                  <div className="flex items-center justify-center px-5 py-5 flex-shrink-0 w-16" style={{ background: 'var(--sage-dark)' }}>
-                    <span className="font-display text-2xl font-light" style={{ color: 'var(--cream)' }}>0{i+1}</span>
-                  </div>
-                  <div className="p-5" style={{ background: 'var(--cream-light)' }}>
-                    <h3 className="font-display text-xl mb-1">{p.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'var(--ink-soft)' }}>{p.text}</p>
-                  </div>
-                </div>
+                <span key={i} className="font-mono text-xs uppercase tracking-widest pb-1" style={{ color: 'var(--cream)', borderBottom: '1.5px solid rgba(255,255,255,0.5)' }}>
+                  {p.title}
+                </span>
               ))}
             </div>
           </div>
