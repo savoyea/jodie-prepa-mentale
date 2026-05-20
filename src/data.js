@@ -66,6 +66,11 @@ export const DEFAULT_CONTENT = {
     { title: "Respect", text: "Respect de la personne, de ses choix, de ses valeurs et de son intégrité physique et morale." },
     { title: "Transparence", text: "Objectifs, méthodes, durée et tarifs sont clairement annoncés dès le premier échange." }
   ],
+  testimonials: [
+    { id: 't1', name: 'Marie L.', role: 'Nageuse compétition', text: "Grâce à Jodie, j'ai appris à gérer mes émotions avant les compétitions. Ma progression mentale a été aussi importante que ma progression technique.", photo: '' },
+    { id: 't2', name: 'Thomas R.', role: 'Militaire', text: "Les séances m'ont permis de développer une vraie résilience face à la pression. Des outils concrets et une écoute sincère.", photo: '' },
+    { id: 't3', name: 'Sophie M.', role: 'Étudiante en médecine', text: "J'abordais mes concours avec beaucoup d'anxiété. Aujourd'hui j'arrive préparée mentalement, c'est un atout énorme.", photo: '' },
+  ],
   contactPhone: "07 83 15 70 30",
   contactEmail: "jodie.prepa.mentale@gmail.com",
   contactLocation: "Pays de la Loire — en présentiel ou en visio",

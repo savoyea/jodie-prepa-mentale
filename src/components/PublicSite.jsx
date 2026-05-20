@@ -15,7 +15,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
   return (
     <div>
       {/* Navigation */}
-      <nav className="sticky top-0 z-40 backdrop-blur-md border-b" style={{ background: 'rgba(255, 255, 255, 0.95)', borderColor: 'var(--line)' }}>
+      <nav className="sticky top-0 z-40 border-b" style={{ background: '#ffffff', borderColor: 'var(--line)' }}>
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <button onClick={() => setPage('home')} className="flex items-center">
             <img
@@ -252,6 +252,31 @@ function HomePage({ content, setPage, services }) {
           </div>
         </div>
       </section>
+
+      {/* Témoignages */}
+      {Array.isArray(content.testimonials) && content.testimonials.length > 0 && (
+        <section className="py-20 px-6" style={{ background: 'var(--cream)' }}>
+          <div className="max-w-6xl mx-auto">
+            <h2 className="font-display text-5xl md:text-6xl mb-14" style={{ color: 'var(--sage-dark)' }}>Témoignages</h2>
+            <div className="grid md:grid-cols-3 gap-10 stagger">
+              {content.testimonials.map((t) => (
+                <div key={t.id} className="flex flex-col items-center text-center">
+                  {t.photo ? (
+                    <img src={t.photo} alt={t.name} className="w-full mb-8 object-cover rounded-xl" style={{ aspectRatio: '3/4', maxHeight: 280 }} />
+                  ) : (
+                    <div className="w-full mb-8 rounded-xl flex items-center justify-center" style={{ aspectRatio: '3/4', maxHeight: 280, background: 'var(--sage-light)' }}>
+                      <span className="font-display text-4xl" style={{ color: 'var(--sage-dark)', opacity: 0.3 }}>{t.name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <p className="text-sm leading-relaxed mb-5 italic" style={{ color: 'var(--ink-soft)' }}>« {t.text} »</p>
+                  <div className="font-display text-lg font-semibold" style={{ color: 'var(--sage-dark)' }}>{t.name}</div>
+                  {t.role && <div className="text-xs font-mono uppercase tracking-widest mt-0.5" style={{ color: 'var(--sage-dark)', opacity: 0.7 }}>{t.role}</div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Approach — bande cramoisie */}
       <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>

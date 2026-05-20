@@ -838,6 +838,85 @@ function AboutSection({ draft, setDraft }) {
   );
 }
 
+function TestimonialsSection({ draft, setDraft }) {
+  const testimonials = Array.isArray(draft.testimonials) ? draft.testimonials : [];
+
+  const handlePhoto = (i, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const items = [...testimonials];
+      items[i] = { ...items[i], photo: ev.target.result };
+      setDraft({ ...draft, testimonials: items });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const update = (i, field, value) => {
+    const items = [...testimonials];
+    items[i] = { ...items[i], [field]: value };
+    setDraft({ ...draft, testimonials: items });
+  };
+
+  const add = () => {
+    setDraft({ ...draft, testimonials: [...testimonials, { id: 't' + Date.now(), name: '', role: '', text: '', photo: '' }] });
+  };
+
+  const remove = (i) => {
+    setDraft({ ...draft, testimonials: testimonials.filter((_, j) => j !== i) });
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-1">
+        <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Les témoignages s'affichent sur la page d'accueil.</div>
+        <button onClick={add} className="text-xs font-mono uppercase tracking-widest flex items-center gap-1 px-3 py-1.5 rounded-full" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+          <Plus size={11} /> Ajouter
+        </button>
+      </div>
+      <div className="space-y-4">
+        {testimonials.length === 0 && (
+          <div className="py-8 text-center text-sm rounded-xl" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>Aucun témoignage — cliquez sur Ajouter.</div>
+        )}
+        {testimonials.map((t, i) => (
+          <div key={t.id || i} className="p-4 rounded-xl" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="text-xs font-mono uppercase tracking-widest" style={{ color: 'var(--sage-dark)' }}>Témoignage {i + 1}</div>
+              <button onClick={() => remove(i)} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--terracotta-dark)' }}><Trash2 size={12} /></button>
+            </div>
+            <div className="flex gap-4 items-start">
+              {/* Photo */}
+              <div className="flex-shrink-0">
+                {t.photo ? (
+                  <img src={t.photo} alt={t.name} className="w-16 h-20 object-cover rounded-lg" style={{ border: '1px solid var(--line)' }} />
+                ) : (
+                  <div className="w-16 h-20 rounded-lg flex items-center justify-center text-[10px] font-mono text-center" style={{ background: 'var(--sage-light)', color: 'var(--ink-soft)' }}>
+                    Photo
+                  </div>
+                )}
+                <label className="mt-1.5 block text-center cursor-pointer text-[10px] font-mono uppercase tracking-widest underline" style={{ color: 'var(--ink-soft)' }}>
+                  {t.photo ? 'Changer' : 'Ajouter'}
+                  <input type="file" accept="image/*" onChange={e => handlePhoto(i, e)} className="hidden" />
+                </label>
+                {t.photo && (
+                  <button onClick={() => update(i, 'photo', '')} className="block w-full text-center text-[10px] font-mono uppercase tracking-widest underline" style={{ color: 'var(--terracotta-dark)' }}>Retirer</button>
+                )}
+              </div>
+              {/* Fields */}
+              <div className="flex-1 space-y-2">
+                <input value={t.name} onChange={e => update(i, 'name', e.target.value)} placeholder="Prénom Nom" className="w-full px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <input value={t.role} onChange={e => update(i, 'role', e.target.value)} placeholder="Rôle / contexte (ex: Nageuse compétition)" className="w-full px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+                <textarea value={t.text} onChange={e => update(i, 'text', e.target.value)} placeholder="Témoignage…" rows={3} className="w-full px-3 py-1.5 rounded-lg border resize-none" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function AdminContent({ content, updateContent, showToast }) {
   const [draft, setDraft] = useState(content);
   const [section, setSection] = useState('hero');
@@ -847,6 +926,7 @@ function AdminContent({ content, updateContent, showToast }) {
   const sections = [
     { id: 'appearance', label: 'Apparence' },
     { id: 'hero', label: 'Accueil' },
+    { id: 'testimonials', label: 'Témoignages' },
     { id: 'what', label: "C'est quoi" },
     { id: 'ethics', label: 'Éthique' },
     { id: 'about', label: 'Qui suis-je' },
@@ -984,6 +1064,9 @@ function AdminContent({ content, updateContent, showToast }) {
               <div className="text-[10px] mt-2" style={{ color: 'var(--ink-soft)' }}>Laissez vide pour masquer l'icône. Les icônes s'affichent dans le hero et le footer.</div>
             </div>
           </>
+        )}
+        {section === 'testimonials' && (
+          <TestimonialsSection draft={draft} setDraft={setDraft} />
         )}
         {section === 'hero' && (
           <>
