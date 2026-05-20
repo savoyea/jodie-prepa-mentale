@@ -271,6 +271,30 @@ function HomePage({ content, setPage, services }) {
         </div>
       </section>
 
+      {/* Approach — bande cramoisie */}
+      <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="font-display text-4xl md:text-5xl" style={{ color: 'var(--cream)' }}>Mon approche</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 stagger">
+            {[
+              { icon: <Heart size={24} />, title: "Bienveillance", text: "Un espace d'écoute sans jugement, à votre rythme." },
+              { icon: <Compass size={24} />, title: "Clarté", text: "Des objectifs concrets et un cap clair dès la première séance." },
+              { icon: <Users size={24} />, title: "Sur mesure", text: "Chaque parcours est construit autour de votre singularité." }
+            ].map((v, i) => (
+              <div key={i} className="text-center p-8 rounded-2xl" style={{ background: 'rgba(252,247,248,0.08)', border: '1px solid rgba(252,247,248,0.15)' }}>
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: 'var(--sage)', color: 'var(--sage-dark)' }}>
+                  {v.icon}
+                </div>
+                <h3 className="font-display text-2xl mb-3" style={{ color: 'var(--cream)' }}>{v.title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: 'rgba(252,247,248,0.7)' }}>{v.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Témoignages */}
       {Array.isArray(content.testimonials) && content.testimonials.length > 0 && (
         <section className="py-20 px-6" style={{ background: 'var(--cream)' }}>
@@ -295,30 +319,6 @@ function HomePage({ content, setPage, services }) {
           </div>
         </section>
       )}
-
-      {/* Approach — bande cramoisie */}
-      <section className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-display text-4xl md:text-5xl" style={{ color: 'var(--cream)' }}>Mon approche</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6 stagger">
-            {[
-              { icon: <Heart size={24} />, title: "Bienveillance", text: "Un espace d'écoute sans jugement, à votre rythme." },
-              { icon: <Compass size={24} />, title: "Clarté", text: "Des objectifs concrets et un cap clair dès la première séance." },
-              { icon: <Users size={24} />, title: "Sur mesure", text: "Chaque parcours est construit autour de votre singularité." }
-            ].map((v, i) => (
-              <div key={i} className="text-center p-8 rounded-2xl" style={{ background: 'rgba(252,247,248,0.08)', border: '1px solid rgba(252,247,248,0.15)' }}>
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-5" style={{ background: 'var(--sage)', color: 'var(--sage-dark)' }}>
-                  {v.icon}
-                </div>
-                <h3 className="font-display text-2xl mb-3" style={{ color: 'var(--cream)' }}>{v.title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'rgba(252,247,248,0.7)' }}>{v.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
