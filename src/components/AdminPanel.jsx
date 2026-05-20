@@ -1516,82 +1516,101 @@ function ContactReplyModal({ contact, content, appSettings, onClose, showToast }
   );
 }
 
-function AdminSettings({ appSettings, updateAppSettings, showToast }) {
-  const [draft, setDraft] = useState(appSettings || {});
-
-  const save = () => { updateAppSettings(draft); showToast('Paramètres enregistrés ✓'); };
-
-  const placeholders = (extra = []) => ['prenom', 'nom', 'date', 'heure', 'service', ...extra]
-    .map(p => <code key={p} className="font-mono text-[11px] px-1 rounded" style={{ background: 'var(--cream-light)', color: 'var(--sage-dark)' }}>{`{${p}}`}</code>);
-
-  const SField = ({ label, k, multiline, help }) => (
+// Définis hors de AdminSettings pour éviter la recréation à chaque render (perte de focus textarea)
+function SettingsField({ label, k, draft, setDraft, multiline, help }) {
+  return (
     <div>
       <label className="block text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>{label}</label>
       {multiline
-        ? <textarea rows={4} value={draft[k] || ''} onChange={e => setDraft({ ...draft, [k]: e.target.value })} className="w-full px-3 py-2 rounded-lg border outline-none text-sm font-mono resize-y" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
-        : <input type="text" value={draft[k] || ''} onChange={e => setDraft({ ...draft, [k]: e.target.value })} className="w-full px-3 py-2 rounded-lg border outline-none text-sm" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />}
+        ? <textarea rows={4} value={draft[k] || ''} onChange={e => setDraft(d => ({ ...d, [k]: e.target.value }))} className="w-full px-3 py-2 rounded-lg border outline-none text-sm font-mono resize-y" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+        : <input type="text" value={draft[k] || ''} onChange={e => setDraft(d => ({ ...d, [k]: e.target.value }))} className="w-full px-3 py-2 rounded-lg border outline-none text-sm" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />}
       {help && <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>{help}</p>}
     </div>
   );
+}
 
-  const Card = ({ title, color, children }) => (
+function SettingsCard({ title, color, children }) {
+  return (
     <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--line)' }}>
       <div className="px-5 py-3 text-sm font-mono uppercase tracking-widest" style={{ background: color || 'var(--ink)', color: 'var(--cream)' }}>{title}</div>
       <div className="p-5 space-y-4" style={{ background: 'var(--cream)' }}>{children}</div>
     </div>
   );
+}
+
+function SettingsPlaceholders({ extra = [] }) {
+  return (
+    <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
+      Placeholders : {['prenom', 'nom', 'date', 'heure', 'service', ...extra].map(p => (
+        <code key={p} className="font-mono text-[11px] px-1 rounded" style={{ background: 'var(--cream-light)', color: 'var(--sage-dark)' }}>{`{${p}}`}</code>
+      ))}
+    </div>
+  );
+}
+
+function AdminSettings({ appSettings, updateAppSettings, showToast }) {
+  const [tab, setTab] = useState('emails');
+  const [draft, setDraft] = useState(appSettings || {});
+
+  const save = () => { updateAppSettings(draft); showToast('Paramètres enregistrés ✓'); };
+
+  const tabs = [
+    { id: 'emails', label: 'Emails' },
+  ];
 
   return (
-    <div className="space-y-8 max-w-2xl">
+    <div className="space-y-6 max-w-2xl">
       <div>
         <div className="font-display text-3xl mb-1">Paramètres</div>
         <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Configuration technique du back-office</div>
       </div>
 
-      {/* Test email */}
-      <Card title="Configuration email" color="var(--ink)">
-        <SField label="Email de test (mode Resend)" k="testEmail"
-          help="En mode test, tous les emails sont redirigés ici. Laissez vide pour utiliser l'email de contact." />
-        <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
-          {isSupabaseConfigured ? '● Supabase connecté — envoi automatique actif' : '○ Supabase non configuré — fallback mailto'}
-        </div>
-      </Card>
+      {/* Sous-onglets */}
+      <div className="flex gap-1">
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className="px-4 py-2 text-xs font-mono uppercase tracking-widest rounded-full transition-all"
+            style={{ background: tab === t.id ? 'var(--ink)' : 'transparent', color: tab === t.id ? 'var(--cream)' : 'var(--ink-soft)', border: tab !== t.id ? '1px solid var(--line)' : 'none' }}>
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Notification */}
-      <Card title="🔔 Notification nouvelle réservation" color="var(--sage-dark)">
-        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
-          Placeholders : {placeholders(['email', 'tel', 'message', 'duree'])}
-        </div>
-        <SField label="Sujet" k="notifSubject" />
-        <SField label="Corps du message" k="notifTemplate" multiline />
-      </Card>
+      {tab === 'emails' && (
+        <div className="space-y-5">
+          <SettingsCard title="Configuration" color="var(--ink)">
+            <SettingsField label="Email de test (mode Resend)" k="testEmail" draft={draft} setDraft={setDraft}
+              help="En mode test, tous les emails sont redirigés ici. Laissez vide pour utiliser l'email de contact." />
+            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
+              {isSupabaseConfigured ? '● Supabase connecté — envoi automatique actif' : '○ Supabase non configuré — fallback mailto'}
+            </div>
+          </SettingsCard>
 
-      {/* Confirmation */}
-      <Card title="✓ Email de confirmation client" color="#2d6a4f">
-        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
-          Placeholders : {placeholders()}
-        </div>
-        <SField label="Sujet" k="emailSubjectConfirm" />
-        <SField label="Corps du message" k="emailTemplateConfirm" multiline />
-      </Card>
+          <SettingsCard title="🔔 Notification nouvelle réservation" color="var(--sage-dark)">
+            <SettingsPlaceholders extra={['email', 'tel', 'message', 'duree']} />
+            <SettingsField label="Sujet" k="notifSubject" draft={draft} setDraft={setDraft} />
+            <SettingsField label="Corps du message" k="notifTemplate" draft={draft} setDraft={setDraft} multiline />
+          </SettingsCard>
 
-      {/* Annulation */}
-      <Card title="✕ Email d'annulation client" color="#92400e">
-        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
-          Placeholders : {placeholders()}
-        </div>
-        <SField label="Sujet" k="emailSubjectCancel" />
-        <SField label="Corps du message" k="emailTemplateCancel" multiline />
-      </Card>
+          <SettingsCard title="✓ Confirmation client" color="#2d6a4f">
+            <SettingsPlaceholders />
+            <SettingsField label="Sujet" k="emailSubjectConfirm" draft={draft} setDraft={setDraft} />
+            <SettingsField label="Corps du message" k="emailTemplateConfirm" draft={draft} setDraft={setDraft} multiline />
+          </SettingsCard>
 
-      {/* Suppression */}
-      <Card title="🗑 Email de suppression client" color="#6b2737">
-        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
-          Placeholders : {placeholders()}
+          <SettingsCard title="✕ Annulation client" color="#92400e">
+            <SettingsPlaceholders />
+            <SettingsField label="Sujet" k="emailSubjectCancel" draft={draft} setDraft={setDraft} />
+            <SettingsField label="Corps du message" k="emailTemplateCancel" draft={draft} setDraft={setDraft} multiline />
+          </SettingsCard>
+
+          <SettingsCard title="🗑 Suppression client" color="#6b2737">
+            <SettingsPlaceholders />
+            <SettingsField label="Sujet" k="emailSubjectDelete" draft={draft} setDraft={setDraft} />
+            <SettingsField label="Corps du message" k="emailTemplateDelete" draft={draft} setDraft={setDraft} multiline />
+          </SettingsCard>
         </div>
-        <SField label="Sujet" k="emailSubjectDelete" />
-        <SField label="Corps du message" k="emailTemplateDelete" multiline />
-      </Card>
+      )}
 
       <button
         onClick={save}
