@@ -464,24 +464,39 @@ function AboutPage({ content, setPage }) {
             <div className="text-xs uppercase tracking-[0.3em] mb-3 font-mono" style={{ color: 'rgba(255,255,255,0.6)' }}>● Parcours académique</div>
             <h2 className="font-display text-4xl md:text-5xl mb-10" style={{ color: 'var(--cream)' }}>Formations</h2>
             <div className="grid md:grid-cols-2 gap-6">
-              {formations.map((f, i) => (
-                <div key={f.id || i} className="p-6 rounded-2xl" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                  <div className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.year}</div>
-                  <div className="font-display text-xl mb-1" style={{ color: 'var(--cream)' }}>{f.school}</div>
-                  <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.85)' }}>{f.diploma}</div>
-                  {f.diplomaDetail && (
-                    <div className="text-xs italic mb-3" style={{ color: 'rgba(255,255,255,0.6)' }}>{f.diplomaDetail}</div>
-                  )}
-                  {f.stages && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-                      <div className="text-[10px] uppercase tracking-widest font-mono mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stages</div>
-                      {f.stages.split('\n').map((s, j) => (
-                        <div key={j} className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>— {s}</div>
-                      ))}
+              {formations.map((f, i) => {
+                const defaultImg = i === 0
+                  ? import.meta.env.BASE_URL + 'formation-nantes.png'
+                  : i === 1
+                    ? import.meta.env.BASE_URL + 'formation-ubo.png'
+                    : '';
+                const imgSrc = f.image || defaultImg;
+                return (
+                  <div key={f.id || i} className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}>
+                    {imgSrc && (
+                      <div style={{ height: '180px', overflow: 'hidden' }}>
+                        <img src={imgSrc} alt={f.school} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <div className="font-mono text-xs uppercase tracking-widest mb-3" style={{ color: 'rgba(255,255,255,0.5)' }}>{f.year}</div>
+                      <div className="font-display text-xl mb-1" style={{ color: 'var(--cream)' }}>{f.school}</div>
+                      <div className="text-sm mb-1" style={{ color: 'rgba(255,255,255,0.85)' }}>{f.diploma}</div>
+                      {f.diplomaDetail && (
+                        <div className="text-xs italic mb-3" style={{ color: 'rgba(255,255,255,0.6)' }}>{f.diplomaDetail}</div>
+                      )}
+                      {f.stages && (
+                        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                          <div className="text-[10px] uppercase tracking-widest font-mono mb-1.5" style={{ color: 'rgba(255,255,255,0.5)' }}>Stages</div>
+                          {f.stages.split('\n').map((s, j) => (
+                            <div key={j} className="text-xs mb-0.5" style={{ color: 'rgba(255,255,255,0.7)' }}>— {s}</div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>

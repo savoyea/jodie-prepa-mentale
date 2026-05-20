@@ -726,7 +726,7 @@ function AboutSection({ draft, setDraft }) {
   };
 
   const addFormation = () => {
-    setDraft({ ...draft, formations: [...formations, { id: 'f' + Date.now(), school: '', diploma: '', diplomaDetail: '', year: '', stages: '' }] });
+    setDraft({ ...draft, formations: [...formations, { id: 'f' + Date.now(), school: '', diploma: '', diplomaDetail: '', year: '', stages: '', image: '' }] });
   };
 
   const removeFormation = (i) => {
@@ -805,7 +805,8 @@ function AboutSection({ draft, setDraft }) {
                 <input value={f.year} onChange={e => updateFormation(i, 'year', e.target.value)} placeholder="Année" className="px-3 py-1.5 rounded-lg border" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
                 <input value={f.diplomaDetail} onChange={e => updateFormation(i, 'diplomaDetail', e.target.value)} placeholder="Détail du diplôme (optionnel)" className="px-3 py-1.5 rounded-lg border col-span-2" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
               </div>
-              <textarea value={f.stages} onChange={e => updateFormation(i, 'stages', e.target.value)} placeholder="Stages (un par ligne)" rows={2} className="w-full px-3 py-1.5 rounded-lg border resize-none" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+              <textarea value={f.stages} onChange={e => updateFormation(i, 'stages', e.target.value)} placeholder="Stages (un par ligne)" rows={2} className="w-full px-3 py-1.5 rounded-lg border resize-none mb-2" style={{ background: 'var(--cream)', borderColor: 'var(--line)' }} />
+              <ImageUpload label="Photo (optionnel)" value={f.image || ''} onChange={v => updateFormation(i, 'image', v)} preview="header" />
             </div>
           ))}
         </div>

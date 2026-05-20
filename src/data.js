@@ -24,6 +24,7 @@ export const DEFAULT_CONTENT = {
       diplomaDetail: '',
       year: '2022',
       stages: 'L2 : Aquatic Sport Carquefou (natation)\nL3 : Saint-sébastien natation',
+      image: '',
     },
     {
       id: 'f2',
@@ -32,6 +33,7 @@ export const DEFAULT_CONTENT = {
       diplomaDetail: 'entraînement et optimisation de la performance sportive, parcours accompagnement de la performance individuelle et collective',
       year: '2025',
       stages: "M1 : Cercle des nageurs de Brest, Centre d'instruction naval de Brest (Marine Nationale)\nM2 : Groupement gymnique Havre et Banlieue",
+      image: '',
     },
   ],
   memoires: [
