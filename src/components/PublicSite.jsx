@@ -198,7 +198,7 @@ function HomePage({ content, setPage, services }) {
             </h1>
             <p className="text-lg mb-10 max-w-xl mx-auto" style={{ color: 'rgba(255,255,255,0.75)' }}>{content.heroSubtitle}</p>
             <div className="flex flex-wrap gap-3 justify-center mb-10">
-              <button onClick={() => setPage('contact')} className="px-7 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: '#fff' }}>
+              <button onClick={() => setPage('services')} className="px-7 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: '#fff' }}>
                 Réserver un appel
               </button>
               <button onClick={() => setPage('what')} className="px-7 py-3.5 rounded-full text-sm uppercase tracking-widest font-mono transition-all" style={{ border: '1px solid rgba(255,255,255,0.45)', color: '#fff' }}>
@@ -224,7 +224,7 @@ function HomePage({ content, setPage, services }) {
               </h1>
               <p className="text-lg mb-8 max-w-md" style={{ color: 'var(--ink-soft)' }}>{content.heroSubtitle}</p>
               <div className="flex flex-wrap gap-3 mb-6">
-                <button onClick={() => setPage('contact')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                <button onClick={() => setPage('services')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
                   Réserver un appel
                 </button>
                 <button onClick={() => setPage('what')} className="px-6 py-3 rounded-full text-sm uppercase tracking-widest font-mono transition-all border" style={{ borderColor: 'var(--sage-dark)', color: 'var(--sage-dark)' }}>
@@ -355,7 +355,7 @@ function WhatIsPage({ content, setPage }) {
             })}
           </div>
           <div className="mt-12 text-center">
-            <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+            <button onClick={() => setPage('services')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
               Échangeons
             </button>
           </div>
@@ -462,7 +462,7 @@ function AboutPage({ content, setPage }) {
                 </div>
               )}
               <p className="text-base leading-relaxed mb-8" style={{ color: 'var(--ink-soft)' }}>{content.aboutLong}</p>
-              <button onClick={() => setPage('contact')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+              <button onClick={() => setPage('services')} className="px-8 py-4 rounded-full text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
                 Réserver un appel découverte
               </button>
             </div>
