@@ -248,7 +248,7 @@ function HomePage({ content, setPage, services }) {
             <h2 className="font-display text-4xl md:text-5xl">Trouvez la formule qui vous correspond</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
-            {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => setPage('contact')} />)}
+            {services.map(s => <ServiceCard key={s.id} service={s} onClick={() => setPage('services')} />)}
           </div>
         </div>
       </section>
