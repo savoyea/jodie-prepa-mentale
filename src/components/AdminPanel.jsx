@@ -38,11 +38,6 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
             <Stat label="Réservations" value={stats.upcomingBookings} />
             <Stat label="Créneaux libres" value={stats.availableSlots} />
             <Stat label="Services" value={stats.servicesCount} />
-            {onExportAll && (
-              <button onClick={onExportAll} className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-mono uppercase tracking-widest transition-all hover:opacity-90" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
-                <Save size={12} /> Tout exporter vers Supabase
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -74,7 +69,7 @@ export default function AdminPanel({ adminPage, setAdminPage, content, updateCon
           {adminPage === 'bookings' && <AdminBookings bookings={bookings} updateBookings={updateBookings} services={services} slots={slots} updateSlots={updateSlots} showToast={showToast} content={content} appSettings={appSettings} />}
           {adminPage === 'messages' && <AdminMessages contacts={contacts} updateContacts={updateContacts} content={content} appSettings={appSettings} showToast={showToast} />}
           {adminPage === 'content' && <AdminContent content={content} updateContent={updateContent} showToast={showToast} />}
-          {adminPage === 'settings' && <AdminSettings appSettings={appSettings} updateAppSettings={updateAppSettings} showToast={showToast} />}
+          {adminPage === 'settings' && <AdminSettings appSettings={appSettings} updateAppSettings={updateAppSettings} onExportAll={onExportAll} showToast={showToast} />}
         </main>
       </div>
     </div>
@@ -1715,14 +1710,22 @@ function SettingsPlaceholders({ extra = [] }) {
   );
 }
 
-function AdminSettings({ appSettings, updateAppSettings, showToast }) {
+function AdminSettings({ appSettings, updateAppSettings, onExportAll, showToast }) {
   const [tab, setTab] = useState('emails');
   const [draft, setDraft] = useState(appSettings || {});
+  const [exporting, setExporting] = useState(false);
 
   const save = () => { updateAppSettings(draft); showToast('Paramètres enregistrés ✓'); };
 
+  const handleExport = async () => {
+    setExporting(true);
+    await onExportAll?.();
+    setExporting(false);
+  };
+
   const tabs = [
     { id: 'emails', label: 'Emails' },
+    { id: 'system', label: 'Système' },
   ];
 
   return (
@@ -1779,13 +1782,36 @@ function AdminSettings({ appSettings, updateAppSettings, showToast }) {
         </div>
       )}
 
-      <button
-        onClick={save}
-        className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest transition-all hover:opacity-90"
-        style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}
-      >
-        <Save size={14} /> Enregistrer
-      </button>
+      {tab === 'system' && (
+        <div className="space-y-5">
+          <SettingsCard title="Base de données" color="var(--ink)">
+            <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>
+              Force la synchronisation de toutes les données locales vers Supabase. Utile après une première configuration ou si vous constatez un décalage entre l'interface et la base.
+            </div>
+            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
+              {isSupabaseConfigured ? '● Supabase connecté' : '○ Supabase non configuré — cette action n\'aura pas d\'effet'}
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={exporting || !onExportAll}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-40"
+              style={{ background: 'var(--ink)', color: 'var(--cream)' }}
+            >
+              <Save size={14} /> {exporting ? 'Export en cours…' : 'Tout exporter vers Supabase'}
+            </button>
+          </SettingsCard>
+        </div>
+      )}
+
+      {tab === 'emails' && (
+        <button
+          onClick={save}
+          className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest transition-all hover:opacity-90"
+          style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}
+        >
+          <Save size={14} /> Enregistrer
+        </button>
+      )}
     </div>
   );
 }
