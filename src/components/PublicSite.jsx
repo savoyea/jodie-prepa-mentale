@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, Phone, Mail, MapPin, Clock, Euro, Heart, Compass, Users, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { toLocalDateStr, addMinutes } from '../utils.js';
 
@@ -319,7 +319,165 @@ function HomePage({ content, setPage, services }) {
           </div>
         </section>
       )}
+
+      {/* Avis Google */}
+      <GoogleReviewsSection content={content} />
     </div>
+  );
+}
+
+const DEFAULT_GOOGLE_REVIEWS = [
+  { author_name: 'Claire M.', rating: 5, text: "Un accompagnement bienveillant et très professionnel. Jodie a su m'aider à surmonter le stress des compétitions avec des outils concrets et efficaces.", profile_photo_url: '', relative_time_description: 'il y a 2 semaines' },
+  { author_name: 'Lucas B.', rating: 5, text: "J'ai découvert la préparation mentale grâce à Jodie. En quelques séances j'ai gagné une vraie clarté sur mes objectifs. Je recommande vivement.", profile_photo_url: '', relative_time_description: 'il y a 1 mois' },
+  { author_name: 'Sarah D.', rating: 5, text: "Jodie est à l'écoute, empathique et très compétente. Les exercices proposés m'ont vraiment aidée à gérer mon anxiété avant les examens.", profile_photo_url: '', relative_time_description: 'il y a 2 mois' },
+  { author_name: 'Antoine R.', rating: 5, text: "Très bonne expérience. Les séances sont structurées, adaptées à mes besoins et les progrès sont visibles rapidement. Merci Jodie !", profile_photo_url: '', relative_time_description: 'il y a 3 mois' },
+  { author_name: 'Émilie T.', rating: 4, text: "Accompagnement sérieux et personnalisé. J'apprécie la rigueur scientifique de la démarche, tout en restant dans un cadre chaleureux.", profile_photo_url: '', relative_time_description: 'il y a 4 mois' },
+];
+
+function StarRating({ rating, size = 18 }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <svg key={i} width={size} height={size} viewBox="0 0 24 24" fill={i <= rating ? '#FBBC04' : 'none'} stroke={i <= rating ? '#FBBC04' : '#ccc'} strokeWidth="1.5">
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function GoogleReviewsSection({ content }) {
+  const [reviews, setReviews] = useState(null);
+  const [placeInfo, setPlaceInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [current, setCurrent] = useState(0);
+  const timerRef = useRef(null);
+
+  const isConfigured = content.googleApiKey && content.googlePlaceId;
+  const displayReviews = reviews ?? (isConfigured ? [] : DEFAULT_GOOGLE_REVIEWS);
+
+  const next = useCallback(() => setCurrent(c => (c + 1) % Math.max(displayReviews.length, 1)), [displayReviews.length]);
+  const prev = () => setCurrent(c => (c - 1 + displayReviews.length) % displayReviews.length);
+
+  useEffect(() => {
+    if (!displayReviews.length) return;
+    timerRef.current = setInterval(next, 5000);
+    return () => clearInterval(timerRef.current);
+  }, [next, displayReviews.length]);
+
+  useEffect(() => {
+    if (!isConfigured) return;
+    setLoading(true);
+    setError(null);
+
+    const loadAndFetch = () => {
+      if (!window.google?.maps?.places) return;
+      const svc = new window.google.maps.places.PlacesService(document.createElement('div'));
+      svc.getDetails(
+        { placeId: content.googlePlaceId, fields: ['name', 'rating', 'user_ratings_total', 'reviews'] },
+        (place, status) => {
+          setLoading(false);
+          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
+            setReviews(place.reviews || []);
+            setPlaceInfo({ name: place.name, rating: place.rating, total: place.user_ratings_total });
+          } else {
+            setError("Impossible de charger les avis. Vérifiez votre Place ID et API Key.");
+          }
+        }
+      );
+    };
+
+    const scriptId = 'gmap-places-sdk';
+    if (document.getElementById(scriptId)) {
+      loadAndFetch();
+    } else {
+      const s = document.createElement('script');
+      s.id = scriptId;
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${content.googleApiKey}&libraries=places`;
+      s.async = true;
+      s.onload = loadAndFetch;
+      s.onerror = () => { setLoading(false); setError("Impossible de charger le SDK Google Maps."); };
+      document.head.appendChild(s);
+    }
+  }, [content.googleApiKey, content.googlePlaceId, isConfigured]);
+
+  if (isConfigured && loading) {
+    return (
+      <section className="py-20 px-6 text-center" style={{ background: 'var(--cream-light)' }}>
+        <div className="text-sm font-mono" style={{ color: 'var(--ink-soft)' }}>Chargement des avis Google…</div>
+      </section>
+    );
+  }
+
+  if (!displayReviews.length && !error) return null;
+
+  const r = displayReviews[current];
+  const avgRating = isConfigured && placeInfo ? placeInfo.rating : 5.0;
+  const totalReviews = isConfigured && placeInfo ? placeInfo.total : null;
+
+  return (
+    <section className="py-20 px-6" style={{ background: 'var(--cream-light)' }}>
+      <div className="max-w-3xl mx-auto">
+        {/* En-tête */}
+        <div className="flex flex-col items-center text-center mb-12">
+          <div className="flex items-center gap-2 mb-3">
+            <svg width="28" height="28" viewBox="0 0 24 24" aria-label="Google">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+            <span className="font-display text-2xl">Avis Google</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="font-display text-5xl font-light">{typeof avgRating === 'number' ? avgRating.toFixed(1) : '5.0'}</span>
+            <div>
+              <StarRating rating={Math.round(avgRating)} size={20} />
+              {totalReviews && <div className="text-xs font-mono mt-1" style={{ color: 'var(--ink-soft)' }}>{totalReviews} avis</div>}
+              {!isConfigured && <div className="text-xs font-mono mt-1" style={{ color: 'var(--ink-soft)' }}>Aperçu — configurez dans le BO</div>}
+            </div>
+          </div>
+          {error && <div className="text-xs mt-3 px-3 py-1 rounded-full" style={{ background: '#fee', color: '#c00' }}>{error}</div>}
+        </div>
+
+        {/* Slider */}
+        {r && (
+          <div className="relative">
+            <div className="p-8 rounded-2xl text-center" style={{ background: 'var(--cream)', border: '1px solid var(--line)', minHeight: 200 }}>
+              <div className="flex justify-center mb-4"><StarRating rating={r.rating} /></div>
+              <p className="text-base leading-relaxed mb-6 italic" style={{ color: 'var(--ink-soft)', maxWidth: '52ch', margin: '0 auto 1.5rem' }}>
+                « {r.text} »
+              </p>
+              <div className="flex items-center justify-center gap-3">
+                {r.profile_photo_url ? (
+                  <img src={r.profile_photo_url} alt={r.author_name} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-display" style={{ background: 'var(--sage-dark)', color: 'var(--cream)' }}>
+                    {r.author_name.charAt(0)}
+                  </div>
+                )}
+                <div className="text-left">
+                  <div className="font-display text-base">{r.author_name}</div>
+                  {r.relative_time_description && <div className="text-xs font-mono" style={{ color: 'var(--ink-soft)' }}>{r.relative_time_description}</div>}
+                </div>
+              </div>
+            </div>
+
+            {/* Contrôles */}
+            <div className="flex items-center justify-center gap-4 mt-6">
+              <button onClick={prev} className="p-2 rounded-full border transition-all hover:opacity-70" style={{ borderColor: 'var(--line)' }}><ChevronLeft size={16} /></button>
+              <div className="flex gap-2">
+                {displayReviews.map((_, i) => (
+                  <button key={i} onClick={() => setCurrent(i)} className="w-2 h-2 rounded-full transition-all" style={{ background: i === current ? 'var(--sage-dark)' : 'var(--line)', transform: i === current ? 'scale(1.3)' : 'scale(1)' }} />
+                ))}
+              </div>
+              <button onClick={next} className="p-2 rounded-full border transition-all hover:opacity-70" style={{ borderColor: 'var(--line)' }}><ChevronRight size={16} /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 

@@ -75,6 +75,8 @@ export const DEFAULT_CONTENT = {
     { id: 't2', name: 'Thomas R.', role: 'Militaire', text: "Les séances m'ont permis de développer une vraie résilience face à la pression. Des outils concrets et une écoute sincère.", photo: '' },
     { id: 't3', name: 'Sophie M.', role: 'Étudiante en médecine', text: "J'abordais mes concours avec beaucoup d'anxiété. Aujourd'hui j'arrive préparée mentalement, c'est un atout énorme.", photo: '' },
   ],
+  googleApiKey: '',
+  googlePlaceId: '',
   contactPhone: "07 83 15 70 30",
   contactEmail: "jodie.prepa.mentale@gmail.com",
   contactLocation: "Pays de la Loire — en présentiel ou en visio",

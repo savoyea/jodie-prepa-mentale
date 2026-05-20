@@ -987,6 +987,7 @@ function AdminContent({ content, updateContent, showToast }) {
     { id: 'appearance', label: 'Apparence' },
     { id: 'hero', label: 'Accueil' },
     { id: 'testimonials', label: 'Témoignages' },
+    { id: 'google', label: 'Avis Google' },
     { id: 'what', label: "C'est quoi" },
     { id: 'ethics', label: 'Éthique' },
     { id: 'about', label: 'Qui suis-je' },
@@ -1189,6 +1190,31 @@ function AdminContent({ content, updateContent, showToast }) {
             <Field label="Téléphone" value={draft.contactPhone} onChange={v => setDraft({...draft, contactPhone: v})} />
             <Field label="Email" value={draft.contactEmail} onChange={v => setDraft({...draft, contactEmail: v})} />
             <Field label="Lieu" value={draft.contactLocation} onChange={v => setDraft({...draft, contactLocation: v})} />
+          </>
+        )}
+        {section === 'google' && (
+          <>
+            <div className="p-4 rounded-xl mb-4 text-sm" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
+              <div className="font-mono text-xs uppercase tracking-widest mb-2" style={{ color: 'var(--sage-dark)' }}>Comment configurer ?</div>
+              <ol className="list-decimal list-inside space-y-1 text-xs" style={{ color: 'var(--ink-soft)' }}>
+                <li>Créez un projet sur <strong>console.cloud.google.com</strong> et activez l'API <strong>Places API</strong></li>
+                <li>Générez une clé API (rubrique "Identifiants") et collez-la ci-dessous</li>
+                <li>Trouvez votre <strong>Place ID</strong> sur <strong>developers.google.com/maps/documentation/places/web-service/place-id</strong> en cherchant votre établissement</li>
+                <li>Enregistrez — les avis réels remplacent les avis par défaut</li>
+              </ol>
+            </div>
+            <Field label="Clé API Google" value={draft.googleApiKey || ''} onChange={v => setDraft({...draft, googleApiKey: v})} help="Clé avec Places API activée. Restreignez-la à votre domaine en production." />
+            <Field label="Place ID" value={draft.googlePlaceId || ''} onChange={v => setDraft({...draft, googlePlaceId: v})} help="Ex : ChIJN1t_tDeuEmsRUsoyG83frY4" />
+            {draft.googleApiKey && draft.googlePlaceId && (
+              <div className="flex items-center gap-2 text-xs font-mono px-3 py-2 rounded-lg" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+                <Check size={12} /> Configuration complète — les avis Google s'afficheront sur le site
+              </div>
+            )}
+            {(!draft.googleApiKey || !draft.googlePlaceId) && (
+              <div className="flex items-center gap-2 text-xs font-mono px-3 py-2 rounded-lg" style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde68a' }}>
+                ⚠ Sans configuration, des avis fictifs s'affichent à titre d'illustration
+              </div>
+            )}
           </>
         )}
         {section === 'legal' && (
