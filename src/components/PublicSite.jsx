@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu, X, Phone, Mail, MapPin, Clock, Euro, Heart, Compass, Users, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { toLocalDateStr, addMinutes } from '../utils.js';
+import { sendEmail, fillTemplate } from '../lib/email.js';
 
-export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, menuOpen, setMenuOpen, showToast }) {
+export default function PublicSite({ page, setPage, content, services, slots, bookings, updateBookings, updateSlots, appSettings, menuOpen, setMenuOpen, showToast }) {
   const navItems = [
     { id: 'home', label: 'Accueil' },
     { id: 'what', label: "C'est quoi ?" },
@@ -64,7 +65,7 @@ export default function PublicSite({ page, setPage, content, services, slots, bo
         {page === 'what' && <WhatIsPage content={content} setPage={setPage} />}
         {page === 'ethics' && <EthicsPage content={content} />}
         {page === 'about' && <AboutPage content={content} setPage={setPage} />}
-        {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} showToast={showToast} setPage={setPage} />}
+        {page === 'services' && <ServicesPage content={content} services={services} slots={slots} bookings={bookings} updateBookings={updateBookings} updateSlots={updateSlots} appSettings={appSettings} showToast={showToast} setPage={setPage} />}
         {page === 'contact' && <ContactPage content={content} setPage={setPage} showToast={showToast} />}
         {page === 'legal-mentions' && <LegalPage title="Mentions légales" html={content.legalMentions} setPage={setPage} />}
         {page === 'legal-cookies' && <LegalPage title="Politique cookies" html={content.legalCookies} setPage={setPage} />}
@@ -700,7 +701,7 @@ function AboutPage({ content, setPage }) {
   );
 }
 
-function ServicesPage({ content, services, slots, bookings, updateBookings, updateSlots, showToast, setPage }) {
+function ServicesPage({ content, services, slots, bookings, updateBookings, updateSlots, appSettings, showToast, setPage }) {
   const [step, setStep] = useState(0); // 0 = liste, 1 = créneau, 2 = form, 3 = confirmation
   const [selectedService, setSelectedService] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
@@ -736,6 +737,28 @@ function ServicesPage({ content, services, slots, bookings, updateBookings, upda
         if (!updatedSlots.find(s => s.id === newId)) updatedSlots.push({ id: newId, date: selectedSlot.date, time: newTime, duration: remaining, available: true });
       }
       updateSlots(updatedSlots);
+    }
+    // Notification email à Jodie
+    if (content.contactEmail && appSettings?.notifSubject) {
+      const vars = {
+        service: selectedService.name,
+        date: selectedSlot?.date || '—',
+        heure: selectedSlot?.time || '—',
+        duree: selectedService.duration ? `${selectedService.duration} min` : '—',
+        nom: form.name,
+        prenom: form.name.split(' ')[0] || form.name,
+        email: form.email,
+        tel: form.phone || '—',
+        message: (isSurDevis ? form.besoin : form.note) || '—',
+      };
+      sendEmail({
+        to: content.contactEmail,
+        subject: fillTemplate(appSettings.notifSubject, vars),
+        body: fillTemplate(appSettings.notifTemplate, vars),
+        fromName: content.siteName || 'Jodie Peltier',
+        replyTo: form.email,
+        testEmail: appSettings.testEmail || undefined,
+      });
     }
     setStep(3);
     showToast(isSurDevis ? "Demande de devis envoyée !" : "Réservation enregistrée !");

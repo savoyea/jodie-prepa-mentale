@@ -78,12 +78,6 @@ export const DEFAULT_CONTENT = {
   ],
   googleApiKey: '',
   googlePlaceId: '',
-  emailSubjectConfirm: "Confirmation de votre séance — {service}",
-  emailTemplateConfirm: "Bonjour {prenom},\n\nVotre séance de {service} est confirmée pour le {date} à {heure}.\n\nN'hésitez pas à me contacter si vous avez des questions.\n\nÀ très bientôt,\nJodie",
-  emailSubjectCancel: "Annulation de votre séance — {service}",
-  emailTemplateCancel: "Bonjour {prenom},\n\nJe suis au regret de vous informer que votre séance de {service} prévue le {date} à {heure} est annulée.\n\nCordialement,\nJodie",
-  emailSubjectDelete: "Votre réservation — {service}",
-  emailTemplateDelete: "Bonjour {prenom},\n\nVotre réservation pour la séance de {service} a été supprimée de notre système.\n\nCordialement,\nJodie",
   contactPhone: "07 83 15 70 30",
   contactEmail: "jodie.prepa.mentale@gmail.com",
   contactLocation: "Pays de la Loire — en présentiel ou en visio",
@@ -91,6 +85,20 @@ export const DEFAULT_CONTENT = {
   legalCookies: `<h2>Politique en matière de cookies</h2><p>Ce site n'utilise pas de cookies de suivi ni de cookies publicitaires.</p><h3>Qu'est-ce qu'un cookie ?</h3><p>Un cookie est un petit fichier texte enregistré sur votre appareil lors de la visite d'un site web, permettant de mémoriser des informations entre deux visites.</p><h3>Cookies utilisés sur ce site</h3><p>Ce site utilise uniquement le stockage local du navigateur (<em>localStorage</em>) afin de mémoriser vos préférences de navigation (thème, langue, etc.). Aucun cookie tiers à des fins publicitaires ou analytiques n'est déposé.</p><h3>Gestion</h3><p>Vous pouvez supprimer ces données à tout moment en vidant le cache et les données de site dans les paramètres de votre navigateur.</p>`,
   legalPrivacy: `<h2>Politique de confidentialité</h2><p>La présente politique vous informe sur la manière dont vos données personnelles sont collectées et traitées, conformément au Règlement Général sur la Protection des Données (RGPD — UE 2016/679).</p><h3>Responsable du traitement</h3><p><strong>Jodie Peltier</strong><br>Email : jodie.prepa.mentale@gmail.com<br>Téléphone : 07 83 15 70 30</p><h3>Données collectées</h3><p>Lors de l'utilisation du formulaire de contact ou du système de réservation, nous collectons : nom, prénom, adresse e-mail, numéro de téléphone et, le cas échéant, un message libre.</p><h3>Finalité du traitement</h3><p>Les données collectées sont utilisées uniquement pour répondre à vos demandes et assurer le suivi de l'accompagnement. Elles ne sont ni vendues ni transmises à des tiers.</p><h3>Durée de conservation</h3><p>Vos données sont conservées le temps nécessaire au traitement de votre demande, et au maximum 3 ans après le dernier contact.</p><h3>Vos droits</h3><p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, de suppression et de portabilité de vos données. Pour exercer ces droits, contactez : jodie.prepa.mentale@gmail.com</p>`,
   legalTerms: `<h2>Conditions d'utilisation</h2><p>L'utilisation de ce site implique l'acceptation pleine et entière des présentes conditions.</p><h3>Accès au site</h3><p>L'accès au site est libre et gratuit. Jodie Peltier se réserve le droit de modifier, suspendre ou interrompre l'accès au site à tout moment et sans préavis.</p><h3>Responsabilité</h3><p>Les informations présentées sur ce site sont fournies à titre indicatif. La préparation mentale est un accompagnement complémentaire et ne se substitue pas à une prise en charge médicale ou psychothérapeutique.</p><h3>Propriété intellectuelle</h3><p>Tout contenu présent sur ce site (textes, images, structure) est protégé par le droit d'auteur. Toute reproduction totale ou partielle sans autorisation préalable est interdite.</p><h3>Droit applicable</h3><p>Les présentes conditions sont régies par le droit français. En cas de litige non résolu à l'amiable, les tribunaux français seront seuls compétents.</p>`,
+};
+
+export const DEFAULT_APP_SETTINGS = {
+  testEmail: '',
+  // Notification nouvelle réservation (envoyée à Jodie)
+  notifSubject: "🔔 Nouvelle demande — {service}",
+  notifTemplate: "Bonjour Jodie,\n\nTu as reçu une nouvelle demande de réservation.\n\nService : {service}\nDate : {date}\nHeure : {heure}\n\nClient :\nNom : {prenom} {nom}\nEmail : {email}\nTéléphone : {tel}\nMessage : {message}\n\nConnecte-toi au back-office pour confirmer ou annuler cette réservation.\n\nJodie Peltier — Préparation mentale",
+  // Templates envoyés au client
+  emailSubjectConfirm: "Confirmation de votre séance — {service}",
+  emailTemplateConfirm: "Bonjour {prenom},\n\nVotre séance de {service} est confirmée pour le {date} à {heure}.\n\nN'hésitez pas à me contacter si vous avez des questions.\n\nÀ très bientôt,\nJodie",
+  emailSubjectCancel: "Annulation de votre séance — {service}",
+  emailTemplateCancel: "Bonjour {prenom},\n\nJe suis au regret de vous informer que votre séance de {service} prévue le {date} à {heure} est annulée.\n\nCordialement,\nJodie",
+  emailSubjectDelete: "Votre réservation — {service}",
+  emailTemplateDelete: "Bonjour {prenom},\n\nVotre réservation pour la séance de {service} a été supprimée de notre système.\n\nCordialement,\nJodie",
 };
 
 export const DEFAULT_SERVICES = [

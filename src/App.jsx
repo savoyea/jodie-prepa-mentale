@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { LogOut, Lock, Home, Check } from 'lucide-react';
-import { storage, DEFAULT_CONTENT, DEFAULT_SERVICES, DEFAULT_BOOKINGS, generateDefaultSlots } from './data.js';
+import { storage, DEFAULT_CONTENT, DEFAULT_SERVICES, DEFAULT_BOOKINGS, DEFAULT_APP_SETTINGS, generateDefaultSlots } from './data.js';
 import PublicSite from './components/PublicSite.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
@@ -13,7 +13,7 @@ export default function App() {
   const [services, setServices] = useState(DEFAULT_SERVICES);
   const [slots, setSlots] = useState([]);
   const [bookings, setBookings] = useState(DEFAULT_BOOKINGS);
-  const [appSettings, setAppSettings] = useState({ testEmail: '' });
+  const [appSettings, setAppSettings] = useState(DEFAULT_APP_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminAuth, setAdminAuth] = useState(false);
@@ -27,7 +27,7 @@ export default function App() {
       const c = await storage.get('content', DEFAULT_CONTENT);
       const s = await storage.get('services', DEFAULT_SERVICES);
       const b = await storage.get('bookings', DEFAULT_BOOKINGS);
-      const as = await storage.get('appSettings', { testEmail: '' });
+      const as = await storage.get('appSettings', DEFAULT_APP_SETTINGS);
       const slVersion = await storage.get('slotsVersion', 1);
       let sl = slVersion >= SLOTS_VERSION ? await storage.get('slots', null) : null;
       if (!sl || !sl.length) {
@@ -170,6 +170,7 @@ export default function App() {
             content={content} services={services} slots={slots}
             bookings={bookings} updateBookings={updateBookings}
             updateSlots={updateSlots}
+            appSettings={appSettings}
             menuOpen={menuOpen} setMenuOpen={setMenuOpen}
             showToast={showToast}
           />

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Users, Settings, FileText, Plus, Trash2, Edit2, Save, Check, Clock, Phone, Mail, X, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { addMinutes, SLOT_DURATIONS, toLocalDateStr } from '../utils.js';
-import { supabase, isSupabaseConfigured, supabaseAnonKey } from '../lib/supabase.js';
+import { isSupabaseConfigured } from '../lib/supabase.js';
+import { sendEmail, fillTemplate } from '../lib/email.js';
 
 export default function AdminPanel({ adminPage, setAdminPage, content, updateContent, services, updateServices, slots, updateSlots, bookings, updateBookings, appSettings, updateAppSettings, showToast, onExportAll }) {
   const menu = [
@@ -585,26 +586,22 @@ function AdminServices({ services, updateServices, showToast }) {
   );
 }
 
-function fillTemplate(tpl, booking, service) {
+function buildBookingVars(booking, service) {
   const prenom = (booking.clientName || '').split(' ')[0];
   const date = booking.date ? new Date(booking.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) : '—';
-  return (tpl || '')
-    .replace(/{prenom}/g, prenom)
-    .replace(/{nom}/g, booking.clientName || '')
-    .replace(/{date}/g, date)
-    .replace(/{heure}/g, booking.time || '—')
-    .replace(/{service}/g, service?.name || '');
+  return { prenom, nom: booking.clientName || '', date, heure: booking.time || '—', service: service?.name || '' };
 }
 
 function BookingResponseModal({ action, booking, service, content, appSettings, onConfirm, onClose }) {
-  const templates = {
-    confirmé: { subject: content.emailSubjectConfirm, body: content.emailTemplateConfirm },
-    annulé:   { subject: content.emailSubjectCancel,  body: content.emailTemplateCancel  },
-    supprimé: { subject: content.emailSubjectDelete,  body: content.emailTemplateDelete  },
+  const vars = buildBookingVars(booking, service);
+  const tpls = {
+    confirmé: { subject: appSettings?.emailSubjectConfirm, body: appSettings?.emailTemplateConfirm },
+    annulé:   { subject: appSettings?.emailSubjectCancel,  body: appSettings?.emailTemplateCancel  },
+    supprimé: { subject: appSettings?.emailSubjectDelete,  body: appSettings?.emailTemplateDelete  },
   };
-  const tpl = templates[action] || {};
-  const [subject, setSubject] = useState(fillTemplate(tpl.subject, booking, service));
-  const [body, setBody] = useState(fillTemplate(tpl.body, booking, service));
+  const tpl = tpls[action] || {};
+  const [subject, setSubject] = useState(fillTemplate(tpl.subject, vars));
+  const [body, setBody] = useState(fillTemplate(tpl.body, vars));
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
 
@@ -615,25 +612,16 @@ function BookingResponseModal({ action, booking, service, content, appSettings, 
     setSending(true);
     setSendError(null);
     try {
-      if (isSupabaseConfigured) {
-        const { data, error } = await supabase.functions.invoke('send-email', {
-          headers: { Authorization: `Bearer ${supabaseAnonKey}` },
-          body: {
-            to: booking.clientEmail,
-            toName: booking.clientName,
-            subject,
-            body,
-            fromName: content.siteName || 'Jodie Peltier',
-            replyTo: content.contactEmail || undefined,
-            testEmail: appSettings?.testEmail || undefined,
-          },
-        });
-        if (error) throw new Error(error.message);
-        if (data && !data.success) throw new Error(data.error);
-      } else {
-        // Fallback mailto si Supabase non configuré
-        window.open(`mailto:${booking.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`, '_blank');
-      }
+      const result = await sendEmail({
+        to: booking.clientEmail,
+        toName: booking.clientName,
+        subject,
+        body,
+        fromName: content.siteName || 'Jodie Peltier',
+        replyTo: content.contactEmail || undefined,
+        testEmail: appSettings?.testEmail || undefined,
+      });
+      if (!result.ok) throw new Error(result.error);
       onConfirm();
     } catch (err) {
       setSendError("Erreur d'envoi : " + err.message);
@@ -1110,7 +1098,6 @@ function AdminContent({ content, updateContent, showToast }) {
     { id: 'ethics', label: 'Éthique' },
     { id: 'about', label: 'Qui suis-je' },
     { id: 'contact', label: 'Contact' },
-    { id: 'notifications', label: 'Notifications' },
     { id: 'legal', label: 'Pages légales' },
   ];
 
@@ -1311,22 +1298,6 @@ function AdminContent({ content, updateContent, showToast }) {
             <Field label="Lieu" value={draft.contactLocation} onChange={v => setDraft({...draft, contactLocation: v})} />
           </>
         )}
-        {section === 'notifications' && (
-          <>
-            <div className="p-3 rounded-xl text-xs mb-2" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)', border: '1px solid var(--line)' }}>
-              Placeholders disponibles : <code className="font-mono">{'{prenom}'}</code> <code className="font-mono">{'{nom}'}</code> <code className="font-mono">{'{date}'}</code> <code className="font-mono">{'{heure}'}</code> <code className="font-mono">{'{service}'}</code>
-            </div>
-            <div className="text-xs font-mono uppercase tracking-widest pt-2 pb-1" style={{ color: 'var(--sage-dark)' }}>✓ Confirmation</div>
-            <Field label="Sujet" value={draft.emailSubjectConfirm || ''} onChange={v => setDraft({...draft, emailSubjectConfirm: v})} />
-            <Field label="Corps du message" value={draft.emailTemplateConfirm || ''} onChange={v => setDraft({...draft, emailTemplateConfirm: v})} multiline />
-            <div className="text-xs font-mono uppercase tracking-widest pt-4 pb-1" style={{ color: 'var(--ochre)' }}>✕ Annulation</div>
-            <Field label="Sujet" value={draft.emailSubjectCancel || ''} onChange={v => setDraft({...draft, emailSubjectCancel: v})} />
-            <Field label="Corps du message" value={draft.emailTemplateCancel || ''} onChange={v => setDraft({...draft, emailTemplateCancel: v})} multiline />
-            <div className="text-xs font-mono uppercase tracking-widest pt-4 pb-1" style={{ color: 'var(--terracotta-dark)' }}>🗑 Suppression</div>
-            <Field label="Sujet" value={draft.emailSubjectDelete || ''} onChange={v => setDraft({...draft, emailSubjectDelete: v})} />
-            <Field label="Corps du message" value={draft.emailTemplateDelete || ''} onChange={v => setDraft({...draft, emailTemplateDelete: v})} multiline />
-          </>
-        )}
         {section === 'google' && (
           <>
             <div className="p-4 rounded-xl mb-4 text-sm" style={{ background: 'var(--cream-light)', border: '1px solid var(--line)' }}>
@@ -1374,6 +1345,26 @@ function AdminSettings({ appSettings, updateAppSettings, showToast }) {
 
   const save = () => { updateAppSettings(draft); showToast('Paramètres enregistrés ✓'); };
 
+  const placeholders = (extra = []) => ['prenom', 'nom', 'date', 'heure', 'service', ...extra]
+    .map(p => <code key={p} className="font-mono text-[11px] px-1 rounded" style={{ background: 'var(--cream-light)', color: 'var(--sage-dark)' }}>{`{${p}}`}</code>);
+
+  const SField = ({ label, k, multiline, help }) => (
+    <div>
+      <label className="block text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>{label}</label>
+      {multiline
+        ? <textarea rows={4} value={draft[k] || ''} onChange={e => setDraft({ ...draft, [k]: e.target.value })} className="w-full px-3 py-2 rounded-lg border outline-none text-sm font-mono resize-y" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />
+        : <input type="text" value={draft[k] || ''} onChange={e => setDraft({ ...draft, [k]: e.target.value })} className="w-full px-3 py-2 rounded-lg border outline-none text-sm" style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }} />}
+      {help && <p className="text-xs mt-1" style={{ color: 'var(--ink-soft)' }}>{help}</p>}
+    </div>
+  );
+
+  const Card = ({ title, color, children }) => (
+    <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid var(--line)' }}>
+      <div className="px-5 py-3 text-sm font-mono uppercase tracking-widest" style={{ background: color || 'var(--ink)', color: 'var(--cream)' }}>{title}</div>
+      <div className="p-5 space-y-4" style={{ background: 'var(--cream)' }}>{children}</div>
+    </div>
+  );
+
   return (
     <div className="space-y-8 max-w-2xl">
       <div>
@@ -1381,27 +1372,50 @@ function AdminSettings({ appSettings, updateAppSettings, showToast }) {
         <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>Configuration technique du back-office</div>
       </div>
 
-      <div className="rounded-2xl p-6 space-y-5" style={{ background: 'var(--cream)', border: '1px solid var(--line)' }}>
-        <div className="font-display text-xl">Email</div>
-
-        <div>
-          <label className="block text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>
-            Email de test
-          </label>
-          <input
-            type="email"
-            value={draft.testEmail || ''}
-            onChange={e => setDraft({ ...draft, testEmail: e.target.value })}
-            placeholder="votre@email.com"
-            className="w-full px-3 py-2 rounded-lg border outline-none text-sm"
-            style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
-          />
-          <p className="text-xs mt-1.5" style={{ color: 'var(--ink-soft)' }}>
-            En mode test Resend (<code>onboarding@resend.dev</code>), tous les emails sont redirigés vers cette adresse.
-            Laissez vide pour utiliser l'email de contact du site.
-          </p>
+      {/* Test email */}
+      <Card title="Configuration email" color="var(--ink)">
+        <SField label="Email de test (mode Resend)" k="testEmail"
+          help="En mode test, tous les emails sont redirigés ici. Laissez vide pour utiliser l'email de contact." />
+        <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
+          {isSupabaseConfigured ? '● Supabase connecté — envoi automatique actif' : '○ Supabase non configuré — fallback mailto'}
         </div>
-      </div>
+      </Card>
+
+      {/* Notification */}
+      <Card title="🔔 Notification nouvelle réservation" color="var(--sage-dark)">
+        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
+          Placeholders : {placeholders(['email', 'tel', 'message', 'duree'])}
+        </div>
+        <SField label="Sujet" k="notifSubject" />
+        <SField label="Corps du message" k="notifTemplate" multiline />
+      </Card>
+
+      {/* Confirmation */}
+      <Card title="✓ Email de confirmation client" color="#2d6a4f">
+        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
+          Placeholders : {placeholders()}
+        </div>
+        <SField label="Sujet" k="emailSubjectConfirm" />
+        <SField label="Corps du message" k="emailTemplateConfirm" multiline />
+      </Card>
+
+      {/* Annulation */}
+      <Card title="✕ Email d'annulation client" color="#92400e">
+        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
+          Placeholders : {placeholders()}
+        </div>
+        <SField label="Sujet" k="emailSubjectCancel" />
+        <SField label="Corps du message" k="emailTemplateCancel" multiline />
+      </Card>
+
+      {/* Suppression */}
+      <Card title="🗑 Email de suppression client" color="#6b2737">
+        <div className="text-xs flex flex-wrap gap-1 items-center" style={{ color: 'var(--ink-soft)' }}>
+          Placeholders : {placeholders()}
+        </div>
+        <SField label="Sujet" k="emailSubjectDelete" />
+        <SField label="Corps du message" k="emailTemplateDelete" multiline />
+      </Card>
 
       <button
         onClick={save}
