@@ -1,16 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Lock } from 'lucide-react';
+import { pb } from '../lib/pocketbase.js';
 
-export default function AdminLogin({ authInput, setAuthInput, authError, setAuthError, onSuccess }) {
-  const handle = () => {
-    if (authInput === 'jodie') {
-      setAuthError('');
-      setAuthInput('');
+export default function AdminLogin({ onSuccess }) {
+  const [password, setPassword] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
+
+  const handle = async () => {
+    if (!password) return;
+    setLoading(true);
+    setError('');
+    try {
+      await pb.collection('users').authWithPassword('jodie', password);
+      setPassword('');
       onSuccess();
-    } else {
-      setAuthError('Mot de passe incorrect');
+    } catch {
+      setError('Mot de passe incorrect');
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm fade-in">
@@ -24,25 +35,23 @@ export default function AdminLogin({ authInput, setAuthInput, authError, setAuth
         <div className="space-y-3">
           <input
             type="password"
-            value={authInput}
-            onChange={(e) => setAuthInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handle()}
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handle()}
             placeholder="Mot de passe"
             autoFocus
             className="w-full px-4 py-3 rounded-lg border outline-none transition-all"
             style={{ background: 'var(--cream-light)', borderColor: 'var(--line)' }}
           />
-          {authError && <p className="text-xs" style={{ color: 'var(--terracotta-dark)' }}>{authError}</p>}
+          {error && <p className="text-xs" style={{ color: 'var(--terracotta-dark)' }}>{error}</p>}
           <button
             onClick={handle}
+            disabled={loading}
             className="w-full py-3 rounded-lg text-sm uppercase tracking-widest font-mono transition-all hover:opacity-90"
-            style={{ background: 'var(--ink)', color: 'var(--cream)' }}
+            style={{ background: 'var(--ink)', color: 'var(--cream)', opacity: loading ? 0.7 : 1 }}
           >
-            Entrer
+            {loading ? 'Connexion…' : 'Entrer'}
           </button>
-          <p className="text-xs text-center mt-4 font-mono" style={{ color: 'var(--ink-soft)' }}>
-            Démo : mot de passe = <span style={{ color: 'var(--terracotta-dark)' }}>jodie</span>
-          </p>
         </div>
       </div>
     </div>

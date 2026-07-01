@@ -1,5 +1,5 @@
 import { toLocalDateStr } from './utils.js';
-import { supabase, isSupabaseConfigured } from './lib/supabase.js';
+import { pb } from './lib/pocketbase.js';
 
 export const DEFAULT_CONTENT = {
   siteName: "Jodie Peltier",
@@ -132,16 +132,15 @@ export const DEFAULT_BOOKINGS = [
 
 export const storage = {
   async get(key, fallback) {
-    if (isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('settings')
-          .select('value')
-          .eq('key', key)
-          .maybeSingle();
-        if (!error && data) return data.value;
-      } catch {}
-    }
+    try {
+      const list = await pb.collection('settings').getFullList({
+        filter: `key = "${key}"`,
+        requestKey: `settings-get-${key}`,
+      });
+      if (list.length > 0 && list[0].value !== null && list[0].value !== undefined) {
+        return list[0].value;
+      }
+    } catch {}
     // Fallback localStorage
     try {
       const v = localStorage.getItem('jodie_' + key);
@@ -149,14 +148,18 @@ export const storage = {
     } catch { return fallback; }
   },
   async set(key, value) {
-    if (isSupabaseConfigured) {
-      try {
-        await supabase
-          .from('settings')
-          .upsert({ key, value }, { onConflict: 'key' });
-      } catch {}
-    }
-    // Toujours écrire en localStorage comme cache local
+    try {
+      const list = await pb.collection('settings').getFullList({
+        filter: `key = "${key}"`,
+        requestKey: `settings-set-${key}`,
+      });
+      if (list.length > 0) {
+        await pb.collection('settings').update(list[0].id, { value });
+      } else {
+        await pb.collection('settings').create({ key, value });
+      }
+    } catch {}
+    // Cache local
     try { localStorage.setItem('jodie_' + key, JSON.stringify(value)); } catch {}
   }
 };

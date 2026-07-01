@@ -1,8 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const url = import.meta.env.VITE_SUPABASE_URL || '';
-const key = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-export const supabase = url && key ? createClient(url, key) : null;
-export const isSupabaseConfigured = Boolean(url && key);
-export const supabaseAnonKey = key;
+// Remplacé par PocketBase — stub pour compatibilité des imports restants
+export const supabase = null;
+export const isSupabaseConfigured = false;
+export const supabaseAnonKey = '';

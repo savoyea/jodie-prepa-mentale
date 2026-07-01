@@ -18,8 +18,6 @@ export default function App() {
   const [loaded, setLoaded] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [adminAuth, setAdminAuth] = useState(false);
-  const [authInput, setAuthInput] = useState('');
-  const [authError, setAuthError] = useState('');
   const [toast, setToast] = useState(null);
 
   const SLOTS_VERSION = 2;
@@ -71,7 +69,7 @@ export default function App() {
   const updateContacts = (ct) => { setContacts(ct); storage.set('contacts', ct); };
   const updateAppSettings = (as) => { setAppSettings(as); storage.set('appSettings', as); };
 
-  const exportAllToSupabase = async () => {
+  const exportAllToPocketBase = async () => {
     await Promise.all([
       storage.set('content', content),
       storage.set('services', services),
@@ -81,7 +79,7 @@ export default function App() {
       storage.set('appSettings', appSettings),
       storage.set('slotsVersion', SLOTS_VERSION),
     ]);
-    showToast("Toutes les données exportées vers Supabase ✓");
+    showToast("Toutes les données sauvegardées ✓");
   };
 
   if (!loaded) {
@@ -192,14 +190,10 @@ export default function App() {
             contacts={contacts} updateContacts={updateContacts}
             appSettings={appSettings} updateAppSettings={updateAppSettings}
             showToast={showToast}
-            onExportAll={exportAllToSupabase}
+            onExportAll={exportAllToPocketBase}
           />
         ) : (
-          <AdminLogin
-            authInput={authInput} setAuthInput={setAuthInput}
-            authError={authError} setAuthError={setAuthError}
-            onSuccess={() => setAdminAuth(true)}
-          />
+          <AdminLogin onSuccess={() => setAdminAuth(true)} />
         )}
       </div>
     </>
