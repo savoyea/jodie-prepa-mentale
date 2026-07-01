@@ -5,5 +5,5 @@ import react from '@vitejs/plugin-react';
 // Si vous déployez sur Netlify/Vercel, vous pouvez mettre base: '/'
 export default defineConfig({
   plugins: [react()],
-  base: '/jodie-prepa-mentale/',
+  base: '/',
 });
