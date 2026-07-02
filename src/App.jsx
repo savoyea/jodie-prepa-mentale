@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Lock, Home, Check } from 'lucide-react';
+import { LogOut, Check } from 'lucide-react';
 import { storage, DEFAULT_CONTENT, DEFAULT_SERVICES, DEFAULT_BOOKINGS, DEFAULT_APP_SETTINGS, generateDefaultSlots } from './data.js';
 import PublicSite from './components/PublicSite.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminPanel from './components/AdminPanel.jsx';
 
+const isAdminRoute = window.location.pathname.startsWith('/admin');
+
 export default function App() {
-  const [view, setView] = useState('public');
   const [page, setPage] = useState('home');
   const [adminPage, setAdminPage] = useState('dashboard');
   const [content, setContent] = useState(DEFAULT_CONTENT);
@@ -40,7 +41,6 @@ export default function App() {
       setSlots(sl);
       setBookings(b);
       setContacts(ct);
-      // Merge avec les defaults pour que les nouveaux champs soient toujours présents
       setAppSettings({ ...DEFAULT_APP_SETTINGS, ...as });
       setLoaded(true);
     })();
@@ -80,6 +80,11 @@ export default function App() {
       storage.set('slotsVersion', SLOTS_VERSION),
     ]);
     showToast("Toutes les données sauvegardées ✓");
+  };
+
+  const handleLogout = () => {
+    setAdminAuth(false);
+    window.location.href = '/';
   };
 
   if (!loaded) {
@@ -141,25 +146,6 @@ export default function App() {
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" />
 
       <div className="font-body" style={{ background: 'var(--cream)', color: 'var(--ink)', minHeight: '100vh' }}>
-        {/* Top switcher */}
-        <div className="fixed bottom-4 right-4 md:bottom-auto md:top-3 md:right-3 z-50 flex gap-2">
-          {view === 'admin' && adminAuth && (
-            <button
-              onClick={() => { setAdminAuth(false); setView('public'); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-widest font-mono rounded-full border transition-all hover:opacity-80"
-              style={{ background: 'var(--cream-light)', borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
-            >
-              <LogOut size={12} /> Quitter
-            </button>
-          )}
-          <button
-            onClick={() => setView(view === 'public' ? 'admin' : 'public')}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-widest font-mono rounded-full transition-all hover:opacity-90"
-            style={{ background: view === 'public' ? 'var(--ink)' : 'var(--terracotta-dark)', color: 'var(--cream)' }}
-          >
-            {view === 'public' ? <><Lock size={12} /> Admin</> : <><Home size={12} /> Site public</>}
-          </button>
-        </div>
 
         {/* Toast */}
         {toast && (
@@ -169,7 +155,34 @@ export default function App() {
           </div>
         )}
 
-        {view === 'public' ? (
+        {isAdminRoute ? (
+          adminAuth ? (
+            <>
+              <div className="fixed bottom-4 right-4 z-50">
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs uppercase tracking-widest font-mono rounded-full border transition-all hover:opacity-80"
+                  style={{ background: 'var(--cream-light)', borderColor: 'var(--line)', color: 'var(--ink-soft)' }}
+                >
+                  <LogOut size={12} /> Quitter
+                </button>
+              </div>
+              <AdminPanel
+                adminPage={adminPage} setAdminPage={setAdminPage}
+                content={content} updateContent={updateContent}
+                services={services} updateServices={updateServices}
+                slots={slots} updateSlots={updateSlots}
+                bookings={bookings} updateBookings={updateBookings}
+                contacts={contacts} updateContacts={updateContacts}
+                appSettings={appSettings} updateAppSettings={updateAppSettings}
+                showToast={showToast}
+                onExportAll={exportAllToPocketBase}
+              />
+            </>
+          ) : (
+            <AdminLogin onSuccess={() => setAdminAuth(true)} />
+          )
+        ) : (
           <PublicSite
             page={page} setPage={setPage}
             content={content} services={services} slots={slots}
@@ -180,20 +193,6 @@ export default function App() {
             menuOpen={menuOpen} setMenuOpen={setMenuOpen}
             showToast={showToast}
           />
-        ) : adminAuth ? (
-          <AdminPanel
-            adminPage={adminPage} setAdminPage={setAdminPage}
-            content={content} updateContent={updateContent}
-            services={services} updateServices={updateServices}
-            slots={slots} updateSlots={updateSlots}
-            bookings={bookings} updateBookings={updateBookings}
-            contacts={contacts} updateContacts={updateContacts}
-            appSettings={appSettings} updateAppSettings={updateAppSettings}
-            showToast={showToast}
-            onExportAll={exportAllToPocketBase}
-          />
-        ) : (
-          <AdminLogin onSuccess={() => setAdminAuth(true)} />
         )}
       </div>
     </>
