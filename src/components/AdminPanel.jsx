@@ -806,9 +806,7 @@ function BookingResponseModal({ action, booking, service, content, appSettings, 
         <div className="p-6 space-y-3">
           <div className="text-xs font-mono px-3 py-2 rounded-lg flex items-center justify-between" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
             <span>À : <strong>{booking.clientEmail}</strong></span>
-            {isSupabaseConfigured
-              ? <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>Envoi automatique</span>
-              : <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#854d0e' }}>Via votre client mail</span>}
+            <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f0fdf4', color: '#166534' }}>Envoi automatique</span>
           </div>
           <div>
             <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Sujet</div>
@@ -1651,9 +1649,7 @@ function ContactReplyModal({ contact, content, appSettings, onClose, showToast }
         <div className="p-6 space-y-3">
           <div className="text-xs font-mono px-3 py-2 rounded-lg" style={{ background: 'var(--cream-light)', color: 'var(--ink-soft)' }}>
             À : <strong>{contact.email}</strong>
-            {isSupabaseConfigured
-              ? <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#dcfce7', color: '#166534' }}>Envoi automatique</span>
-              : <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#fef9c3', color: '#854d0e' }}>Via votre client mail</span>}
+            <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full" style={{ background: '#f0fdf4', color: '#166534' }}>Envoi automatique</span>
           </div>
           <div>
             <div className="text-xs uppercase tracking-widest font-mono mb-1" style={{ color: 'var(--ink-soft)' }}>Sujet</div>
@@ -1749,10 +1745,12 @@ function AdminSettings({ appSettings, updateAppSettings, onExportAll, showToast 
       {tab === 'emails' && (
         <div className="space-y-5">
           <SettingsCard title="Configuration" color="var(--ink)">
-            <SettingsField label="Email de test (mode Resend)" k="testEmail" draft={draft} setDraft={setDraft}
-              help="En mode test, tous les emails sont redirigés ici. Laissez vide pour utiliser l'email de contact." />
-            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
-              {isSupabaseConfigured ? '● Supabase connecté — envoi automatique actif' : '○ Supabase non configuré — fallback mailto'}
+            <SettingsField label="Email de test" k="testEmail" draft={draft} setDraft={setDraft}
+              help="Si renseigné, tous les emails sont redirigés ici (utile pour les tests). Laissez vide en production." />
+            <div className="flex items-center justify-between gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde68a' }}>
+              <span>○ SMTP non configuré — configurer dans PocketBase admin</span>
+              <a href="https://jodie.arsava.fr/_/settings/mail" target="_blank" rel="noreferrer"
+                className="underline font-mono" style={{ color: '#854d0e' }}>Configurer →</a>
             </div>
           </SettingsCard>
 
@@ -1786,10 +1784,10 @@ function AdminSettings({ appSettings, updateAppSettings, onExportAll, showToast 
         <div className="space-y-5">
           <SettingsCard title="Base de données" color="var(--ink)">
             <div className="text-sm" style={{ color: 'var(--ink-soft)' }}>
-              Force la synchronisation de toutes les données locales vers Supabase. Utile après une première configuration ou si vous constatez un décalage entre l'interface et la base.
+              Force la synchronisation de toutes les données locales vers PocketBase. Utile si vous constatez un décalage entre l'interface et la base.
             </div>
-            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: isSupabaseConfigured ? '#f0fdf4' : '#fef9c3', color: isSupabaseConfigured ? '#166534' : '#854d0e', border: `1px solid ${isSupabaseConfigured ? '#bbf7d0' : '#fde68a'}` }}>
-              {isSupabaseConfigured ? '● Supabase connecté' : '○ Supabase non configuré — cette action n\'aura pas d\'effet'}
+            <div className="flex items-center gap-2 text-xs px-3 py-2 rounded-lg" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0' }}>
+              ● PocketBase connecté — jodie.arsava.fr
             </div>
             <button
               onClick={handleExport}
@@ -1797,7 +1795,7 @@ function AdminSettings({ appSettings, updateAppSettings, onExportAll, showToast 
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-mono uppercase tracking-widest transition-all hover:opacity-90 disabled:opacity-40"
               style={{ background: 'var(--ink)', color: 'var(--cream)' }}
             >
-              <Save size={14} /> {exporting ? 'Export en cours…' : 'Tout exporter vers Supabase'}
+              <Save size={14} /> {exporting ? 'Export en cours…' : 'Tout exporter vers PocketBase'}
             </button>
           </SettingsCard>
         </div>
