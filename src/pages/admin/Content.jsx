@@ -281,7 +281,7 @@ function SectionCard({ section, positions, onChange, onDelete, onUp, onDown, isF
                 value={section.image || ''}
                 onChange={e => set('image', e.target.value)}
                 placeholder="https://…"
-                style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.875rem', outline: 'none', fontFamily: 'var(--font-mono)', fontSize: '0.8rem' }}
+                style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.8rem', outline: 'none', fontFamily: 'var(--font-mono)' }}
               />
             </div>
           )}
