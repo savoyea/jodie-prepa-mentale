@@ -1,168 +1,190 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MessageSquare, Check } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useSite } from '../../contexts/SiteContext.jsx';
-import { loadBookings, loadContacts, loadSlots } from '../../lib/storage.js';
-import { addMinutes } from '../../utils.js';
+import { Link } from 'react-router-dom';
+import { Calendar, CheckCircle2, Clock, MessageSquare } from 'lucide-react';
+import { pb } from '../../lib/pocketbase.js';
 
-function KpiCard({ label, value, sub, color, icon, onClick }) {
+const MONTHS_FR = ['JAN.','FÉV.','MAR.','AVR.','MAI','JUIN','JUIL.','AOÛT','SEPT.','OCT.','NOV.','DÉC.'];
+
+function StatCard({ label, value, sub, icon: Icon, accent }) {
   return (
-    <button onClick={onClick}
-      className="text-left p-5 rounded-2xl space-y-2 w-full transition-all hover:opacity-90"
-      style={{ background: 'var(--color-cream)', border: '1px solid var(--color-line)', cursor: onClick ? 'pointer' : 'default' }}>
-      <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-widest font-mono" style={{ color: 'var(--color-ink-soft)' }}>{label}</div>
-        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: color + '22' }}>
-          {icon && <icon.type {...icon.props} size={15} style={{ color }} />}
+    <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>
+      <div className="flex items-center justify-between mb-4">
+        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-ink-soft)' }}>
+          {label}
+        </span>
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center"
+          style={{ background: accent ? '#f0fdf4' : 'var(--color-sage-light)' }}
+        >
+          <Icon size={16} style={{ color: accent ? '#166534' : 'var(--color-sage-dark)' }} />
         </div>
       </div>
-      <div className="font-serif text-4xl" style={{ color }}>{value}</div>
-      {sub && <div className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>{sub}</div>}
-    </button>
+      <div style={{ fontFamily: 'var(--font-serif)', fontSize: '3rem', fontWeight: 400, color: accent ? '#166534' : 'var(--color-sage-dark)', lineHeight: 1 }}>
+        {value}
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--color-ink-soft)', marginTop: '0.5rem' }}>
+        {sub}
+      </div>
+    </div>
   );
 }
 
 export default function Dashboard() {
-  const { services } = useSite();
-  const navigate = useNavigate();
-  const [bookings, setBookings] = useState([]);
-  const [contacts, setContacts] = useState([]);
-  const [slots, setSlots] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ bookings: 0, confirmed: 0, slots: 0, messages: 0 });
+  const [chart, setChart] = useState([]);
+  const [topServices, setTopServices] = useState([]);
+  const [upcoming, setUpcoming] = useState([]);
 
   useEffect(() => {
-    Promise.all([loadBookings(), loadContacts(), loadSlots()]).then(([b, c, s]) => {
-      setBookings(b); setContacts(c); setSlots(s); setLoading(false);
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    Promise.all([
+      pb.collection('bookings').getList(1, 1, { filter: 'status="pending"' }).catch(() => ({ totalItems: 0 })),
+      pb.collection('bookings').getList(1, 1, { filter: 'status="confirmed"' }).catch(() => ({ totalItems: 0 })),
+      pb.collection('slots').getList(1, 1, { filter: `available=true && date>="${today}"` }).catch(() => ({ totalItems: 0 })),
+      pb.collection('contacts').getList(1, 1, { filter: 'read=false' }).catch(() => ({ totalItems: 0 })),
+      pb.collection('bookings').getFullList({ sort: '-created', filter: `created>="${getMonthsAgo(6)}"` }).catch(() => []),
+      pb.collection('services').getFullList({ sort: 'sort_order' }).catch(() => []),
+      pb.collection('bookings').getFullList({ sort: 'date', filter: `date>="${today}" && status="confirmed"`, expand: 'service_id' }).catch(() => []),
+    ]).then(([pending, confirmed, slots, msgs, allBookings, services, upcomingBookings]) => {
+      setStats({
+        bookings: pending.totalItems,
+        confirmed: confirmed.totalItems,
+        slots: slots.totalItems,
+        messages: msgs.totalItems,
+      });
+
+      // Chart 6 derniers mois
+      const months = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        return { month: MONTHS_FR[d.getMonth()], year: d.getFullYear(), m: d.getMonth(), y: d.getFullYear(), count: 0 };
+      });
+      allBookings.forEach(b => {
+        const d = new Date(b.created);
+        const mi = months.findIndex(m => m.m === d.getMonth() && m.y === d.getFullYear());
+        if (mi >= 0) months[mi].count++;
+      });
+      setChart(months);
+
+      // Top services
+      const svcMap = {};
+      allBookings.forEach(b => { svcMap[b.service_name] = (svcMap[b.service_name] || 0) + 1; });
+      setTopServices(services.map(s => ({ name: s.name, count: svcMap[s.name] || 0 })));
+
+      setUpcoming(upcomingBookings.slice(0, 5));
     });
   }, []);
 
-  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const getMonthsAgo = (n) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - n);
+    return d.toISOString().split('T')[0];
+  };
 
-  const total = bookings.length;
-  const confirmed = bookings.filter(b => b.status === 'confirmé').length;
-  const pending = bookings.filter(b => b.status === 'en attente').length;
-  const convRate = total ? Math.round((confirmed / total) * 100) : 0;
-  const unreadMsg = contacts.filter(c => !c.read).length;
-  const freeSlots = slots.filter(s => s.available && new Date(s.date + 'T12:00:00') >= today).length;
-
-  const upcoming = bookings
-    .filter(b => b.status === 'confirmé' && b.date && new Date(b.date + 'T12:00:00') >= today)
-    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
-    .slice(0, 5);
-
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - (5 - i));
-    return { label: d.toLocaleDateString('fr-FR', { month: 'short' }), key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` };
-  });
-  const byMonth = months.map(m => ({
-    ...m,
-    total: bookings.filter(b => b.date?.startsWith(m.key)).length,
-    confirmed: bookings.filter(b => b.date?.startsWith(m.key) && b.status === 'confirmé').length,
-  }));
-  const maxMonth = Math.max(...byMonth.map(m => m.total), 1);
-
-  const svcCount = services.map(s => ({
-    ...s,
-    count: bookings.filter(b => b.serviceId === s.id).length,
-  })).sort((a, b) => b.count - a.count);
-  const maxSvc = Math.max(...svcCount.map(s => s.count), 1);
-
-  if (loading) return <div className="text-sm py-12 text-center" style={{ color: 'var(--color-ink-soft)' }}>Chargement…</div>;
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const maxCount = Math.max(...chart.map(c => c.count), 1);
+  const totalBookings = chart.reduce((s, c) => s + c.count, 0);
+  const confirmRate = stats.confirmed > 0 && stats.bookings + stats.confirmed > 0
+    ? Math.round((stats.confirmed / (stats.confirmed + stats.bookings)) * 100) : 0;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <div className="font-serif text-3xl mb-1" style={{ color: 'var(--color-ink)' }}>Dashboard</div>
-        <div className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-          {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </div>
+    <div className="max-w-4xl">
+      <div className="mb-8">
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--color-ink)' }}>Dashboard</h1>
+        <p style={{ color: 'var(--color-ink-soft)', fontSize: '0.875rem', marginTop: '0.25rem' }}>{today}</p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Réservations" value={total} sub={`${pending} en attente`} color="var(--color-ink)" icon={<Calendar />} onClick={() => navigate('/admin/reservations')} />
-        <KpiCard label="Confirmées" value={confirmed} sub={`Taux ${convRate}%`} color="#16a34a" icon={<Check />} />
-        <KpiCard label="Créneaux libres" value={freeSlots} sub="à venir" color="var(--color-sage-dark)" icon={<Clock />} onClick={() => navigate('/admin/planning')} />
-        <KpiCard label="Messages" value={unreadMsg} sub={`${contacts.length} au total`} color={unreadMsg > 0 ? '#d97706' : 'var(--color-ink-soft)'} icon={<MessageSquare />} onClick={() => navigate('/admin/messages')} />
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Réservations" value={stats.bookings}  sub={`${stats.bookings} en attente`}  icon={Calendar} />
+        <StatCard label="Confirmées"   value={stats.confirmed} sub={`Taux ${confirmRate}%`}           icon={CheckCircle2} accent />
+        <StatCard label="Créneaux libres" value={stats.slots}  sub="à venir"                          icon={Clock} />
+        <StatCard label="Messages"     value={stats.messages}  sub={`${stats.messages} au total`}     icon={MessageSquare} />
+      </div>
+
+      {/* Chart */}
+      <div className="rounded-2xl p-6 mb-6" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>
+        <h2 className="mb-6" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-ink)' }}>
+          Réservations — 6 derniers mois
+        </h2>
+        <div className="flex items-end gap-4 h-24">
+          {chart.map((m, i) => (
+            <div key={i} className="flex-1 flex flex-col items-center gap-2">
+              <div
+                className="w-full rounded-t-md"
+                style={{
+                  height: `${(m.count / maxCount) * 80}px`,
+                  minHeight: 4,
+                  background: m.count > 0 ? 'var(--color-sage-dark)' : 'var(--color-line)',
+                  transition: 'height 0.5s ease',
+                }}
+              />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', color: 'var(--color-ink-soft)' }}>
+                {m.month}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--color-ink)' }}>
+                {m.count}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Bar chart */}
-        <div className="p-6 rounded-2xl" style={{ background: 'var(--color-cream)', border: '1px solid var(--color-line)' }}>
-          <div className="font-serif text-xl mb-4" style={{ color: 'var(--color-ink)' }}>Réservations — 6 derniers mois</div>
-          <div className="flex items-end gap-2 h-32">
-            {byMonth.map(m => (
-              <div key={m.key} className="flex-1 flex flex-col items-center gap-1">
-                <div className="w-full flex flex-col justify-end gap-0.5" style={{ height: 100 }}>
-                  <div className="w-full rounded-t-sm" style={{ height: `${(m.confirmed / maxMonth) * 100}%`, background: 'var(--color-sage-dark)', minHeight: m.confirmed ? 4 : 0 }} />
-                  <div className="w-full rounded-t-sm" style={{ height: `${((m.total - m.confirmed) / maxMonth) * 100}%`, background: 'var(--color-line)', minHeight: (m.total - m.confirmed) ? 4 : 0 }} />
-                </div>
-                <div className="text-[10px] font-mono uppercase" style={{ color: 'var(--color-ink-soft)' }}>{m.label}</div>
-                <div className="text-xs font-mono font-medium">{m.total}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-4 mt-3 text-[10px] font-mono uppercase tracking-widest" style={{ color: 'var(--color-ink-soft)' }}>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: 'var(--color-sage-dark)' }} /> Confirmé</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: 'var(--color-line)' }} /> Autre</span>
-          </div>
-        </div>
-
-        {/* Services populaires */}
-        <div className="p-6 rounded-2xl" style={{ background: 'var(--color-cream)', border: '1px solid var(--color-line)' }}>
-          <div className="font-serif text-xl mb-4" style={{ color: 'var(--color-ink)' }}>Services les plus demandés</div>
+        {/* Top services */}
+        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>
+          <h2 className="mb-4" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-ink)' }}>
+            Services les plus demandés
+          </h2>
           <div className="space-y-3">
-            {svcCount.map(s => (
-              <div key={s.id}>
-                <div className="flex justify-between text-xs mb-1">
-                  <span className="font-medium truncate" style={{ color: 'var(--color-ink)' }}>{s.name}</span>
-                  <span className="font-mono ml-2 flex-shrink-0" style={{ color: 'var(--color-ink-soft)' }}>{s.count} rés.</span>
+            {topServices.map((s, i) => (
+              <div key={i}>
+                <div className="flex justify-between mb-1">
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-ink)' }}>{s.name}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--color-ink-soft)' }}>{s.count} rés.</span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--color-cream-light)', border: '1px solid var(--color-line)' }}>
-                  <div className="h-full rounded-full transition-all" style={{ width: `${(s.count / maxSvc) * 100}%`, background: 'var(--color-sage-dark)' }} />
+                <div className="h-1 rounded-full" style={{ background: 'var(--color-line)' }}>
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: totalBookings > 0 ? `${(s.count / totalBookings) * 100}%` : '0%', background: 'var(--color-sage-dark)', transition: 'width 0.5s ease' }}
+                  />
                 </div>
               </div>
             ))}
-            {svcCount.every(s => s.count === 0) && (
-              <div className="text-sm text-center py-4" style={{ color: 'var(--color-ink-soft)' }}>Aucune réservation</div>
-            )}
           </div>
         </div>
-      </div>
 
-      {/* Prochains RDV */}
-      <div className="p-6 rounded-2xl" style={{ background: 'var(--color-cream)', border: '1px solid var(--color-line)' }}>
-        <div className="flex items-center justify-between mb-4">
-          <div className="font-serif text-xl" style={{ color: 'var(--color-ink)' }}>Prochains rendez-vous confirmés</div>
-          <button onClick={() => navigate('/admin/planning')} className="text-xs font-mono uppercase tracking-widest underline" style={{ color: 'var(--color-ink-soft)' }}>Voir planning →</button>
-        </div>
-        {upcoming.length === 0 ? (
-          <div className="text-sm text-center py-6" style={{ color: 'var(--color-ink-soft)' }}>Aucun rendez-vous à venir</div>
-        ) : (
-          <div className="space-y-2">
-            {upcoming.map(b => {
-              const svc = services.find(s => s.id === b.serviceId);
-              const dateStr = b.date ? new Date(b.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) : '—';
-              const endTime = svc && b.time ? addMinutes(b.time, svc.duration) : null;
-              return (
-                <div key={b.id} className="flex items-center gap-4 px-4 py-3 rounded-xl" style={{ background: 'var(--color-cream-light)', border: '1px solid var(--color-line)' }}>
-                  <div className="text-center flex-shrink-0 w-20">
-                    <div className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--color-ink-soft)' }}>{dateStr}</div>
-                    <div className="font-mono text-sm font-medium">{b.time}{endTime ? ` → ${endTime}` : ''}</div>
-                  </div>
-                  <div className="w-px h-8 flex-shrink-0" style={{ background: 'var(--color-line)' }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">{b.clientName}</div>
-                    <div className="text-xs truncate" style={{ color: 'var(--color-ink-soft)' }}>{svc?.name || '—'}</div>
-                  </div>
-                  {b.clientEmail && (
-                    <a href={`mailto:${b.clientEmail}`} className="text-xs font-mono" style={{ color: 'var(--color-sage-dark)' }}>{b.clientEmail}</a>
-                  )}
-                </div>
-              );
-            })}
+        {/* Prochains RDV */}
+        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>
+          <div className="flex items-center justify-between mb-4">
+            <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: 'var(--color-ink)' }}>
+              Prochains rendez-vous confirmés
+            </h2>
+            <Link
+              to="/admin/planning"
+              style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-sage-dark)' }}
+            >
+              Voir planning →
+            </Link>
           </div>
-        )}
+          {upcoming.length === 0 ? (
+            <p style={{ color: 'var(--color-ink-soft)', fontSize: '0.875rem' }}>Aucun rendez-vous à venir</p>
+          ) : (
+            <div className="space-y-3">
+              {upcoming.map(b => (
+                <div key={b.id} className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'var(--color-cream-light)' }}>
+                  <div className="flex-1">
+                    <p style={{ fontSize: '0.875rem', color: 'var(--color-ink)', fontWeight: 500 }}>{b.client_name}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--color-ink-soft)' }}>
+                      {b.service_name} · {b.date} {b.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

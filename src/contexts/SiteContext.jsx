@@ -1,41 +1,59 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loadSiteContent, saveSiteContent, loadServices, saveServices } from '../lib/storage.js';
-import { DEFAULT_CONTENT, DEFAULT_SERVICES } from '../lib/defaults.js';
+import { pb } from '../lib/pocketbase.js';
 
 const SiteContext = createContext(null);
 
+const THEME_VARS = {
+  colorInk:       '--color-ink',
+  colorSageDark:  '--color-sage-dark',
+  colorCream:     '--color-cream',
+  colorCreamLight:'--color-cream-light',
+  colorSageLight: '--color-sage-light',
+  colorSage:      '--color-sage',
+  colorLine:      '--color-line',
+  colorInkSoft:   '--color-ink-soft',
+};
+
+export function applyTheme(theme = {}) {
+  Object.entries(THEME_VARS).forEach(([key, cssVar]) => {
+    if (theme[key]) document.documentElement.style.setProperty(cssVar, theme[key]);
+    else document.documentElement.style.removeProperty(cssVar);
+  });
+}
+
 export function SiteProvider({ children }) {
-  const [content, setContent] = useState(DEFAULT_CONTENT);
-  const [services, setServices] = useState(DEFAULT_SERVICES);
-  const [loaded, setLoaded] = useState(false);
+  const [content, setContent] = useState({});
+  const [services, setServices] = useState([]);
+  const [pages, setPages] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([loadSiteContent(), loadServices()]).then(([c, s]) => {
-      setContent(c);
-      setServices(s);
-      setLoaded(true);
-      if (c.favicon) {
-        let link = document.querySelector("link[rel~='icon']");
-        if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
-        link.href = c.favicon;
-      }
-      if (c.siteName) document.title = `${c.siteName} — ${c.tagline || 'Préparation mentale'}`;
-    });
+    Promise.all([
+      pb.collection('site_content').getFirstListItem('section="global"').catch(() => null),
+      pb.collection('services').getFullList({ sort: 'sort_order', filter: 'active=true' }).catch(() => []),
+      pb.collection('pages').getFullList({ filter: 'status="published" && nav_position!="none"', sort: 'nav_order' }).catch(() => []),
+      pb.collection('app_settings').getFirstListItem('key="theme"').catch(() => null),
+    ]).then(([siteContent, svcList, pageList, themeRecord]) => {
+      setContent(siteContent?.data || {});
+      setServices(svcList);
+      setPages(pageList);
+      applyTheme(themeRecord?.value || {});
+    }).finally(() => setLoading(false));
   }, []);
 
-  const updateContent = async (updates) => {
-    const next = { ...content, ...updates };
-    setContent(next);
-    await saveSiteContent(next);
-  };
-
-  const updateServices = async (next) => {
-    setServices(next);
-    await saveServices(next);
+  const refresh = async () => {
+    const [siteContent, svcList, pageList] = await Promise.all([
+      pb.collection('site_content').getFirstListItem('section="global"').catch(() => null),
+      pb.collection('services').getFullList({ sort: 'sort_order', filter: 'active=true' }).catch(() => []),
+      pb.collection('pages').getFullList({ filter: 'status="published" && nav_position!="none"', sort: 'nav_order' }).catch(() => []),
+    ]);
+    setContent(siteContent?.data || {});
+    setServices(svcList);
+    setPages(pageList);
   };
 
   return (
-    <SiteContext.Provider value={{ content, services, loaded, updateContent, updateServices }}>
+    <SiteContext.Provider value={{ content, services, pages, loading, refresh }}>
       {children}
     </SiteContext.Provider>
   );

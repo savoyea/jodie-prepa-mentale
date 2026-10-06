@@ -1,9 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
-// IMPORTANT : remplacez 'jodie-prepa-mentale' par le nom EXACT de votre repo GitHub
-// Si vous déployez sur Netlify/Vercel, vous pouvez mettre base: '/'
 export default defineConfig({
-  plugins: [react()],
-  base: '/',
+  plugins: [react(), tailwindcss()],
 });

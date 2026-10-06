@@ -377,32 +377,38 @@ function GoogleReviewsSection({ content }) {
     setLoading(true);
     setError(null);
 
-    const loadAndFetch = () => {
-      if (!window.google?.maps?.places) return;
-      const svc = new window.google.maps.places.PlacesService(document.createElement('div'));
-      svc.getDetails(
-        { placeId: content.googlePlaceId, fields: ['name', 'rating', 'user_ratings_total', 'reviews'] },
-        (place, status) => {
-          setLoading(false);
-          if (status === window.google.maps.places.PlacesServiceStatus.OK) {
-            setReviews(place.reviews || []);
-            setPlaceInfo({ name: place.name, rating: place.rating, total: place.user_ratings_total });
-          } else {
-            setError("Impossible de charger les avis. Vérifiez votre Place ID et API Key.");
-          }
-        }
-      );
+    const fetchWithSdk = async () => {
+      try {
+        const { Place } = await window.google.maps.importLibrary('places');
+        const place = new Place({ id: content.googlePlaceId });
+        await place.fetchFields({ fields: ['displayName', 'rating', 'userRatingCount', 'reviews'] });
+        const normalized = (place.reviews || []).map(r => ({
+          author_name: r.authorAttribution?.displayName || '',
+          profile_photo_url: r.authorAttribution?.photoUri || r.authorAttribution?.photoURI || '',
+          rating: r.rating,
+          text: typeof r.text === 'object' ? (r.text?.text || '') : (r.text || ''),
+          relative_time_description: r.relativePublishTimeDescription || '',
+        }));
+        setReviews(normalized);
+        setPlaceInfo({ name: place.displayName, rating: place.rating, total: place.userRatingCount });
+        setLoading(false);
+      } catch (e) {
+        setLoading(false);
+        setReviews(DEFAULT_GOOGLE_REVIEWS);
+      }
     };
 
     const scriptId = 'gmap-places-sdk';
-    if (document.getElementById(scriptId)) {
-      loadAndFetch();
+    const existing = document.getElementById(scriptId);
+    if (existing && window.google?.maps?.importLibrary) {
+      fetchWithSdk();
     } else {
+      if (existing) existing.remove();
+      window.__gmapPlacesReady__ = fetchWithSdk;
       const s = document.createElement('script');
       s.id = scriptId;
-      s.src = `https://maps.googleapis.com/maps/api/js?key=${content.googleApiKey}&libraries=places`;
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${content.googleApiKey}&loading=async&callback=__gmapPlacesReady__`;
       s.async = true;
-      s.onload = loadAndFetch;
       s.onerror = () => { setLoading(false); setError("Impossible de charger le SDK Google Maps."); };
       document.head.appendChild(s);
     }
@@ -529,43 +535,56 @@ function WhatIsPage({ content, setPage }) {
   );
 }
 
+function EthicsAccordionItem({ principle }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 8 }}
+      >
+        <span className="font-mono text-xs uppercase tracking-widest" style={{ color: 'var(--cream)' }}>{principle.title}</span>
+        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, flexShrink: 0, transition: 'transform 0.2s', transform: open ? 'rotate(45deg)' : 'rotate(0deg)', display: 'inline-block' }}>+</span>
+      </button>
+      {open && principle.description && (
+        <p className="text-sm leading-relaxed pb-4" style={{ color: 'rgba(255,255,255,0.7)', paddingLeft: 0 }}>{principle.description}</p>
+      )}
+    </div>
+  );
+}
+
 function EthicsPage({ content }) {
-  const ethicsImg = content.ethicsImage || (import.meta.env.BASE_URL + 'ethics-photo.png');
   const schemaImg = content.ethicsSchema || (import.meta.env.BASE_URL + 'ethics-schema.png');
+  const principles = Array.isArray(content.ethicsPrinciples) ? content.ethicsPrinciples : [];
 
   return (
     <div>
       {/* Header */}
-      <div className="py-16 px-6" style={{ background: 'var(--sage-dark)' }}>
+      <div className="py-20 px-6" style={{ background: 'var(--sage-dark)' }}>
         <div className="max-w-5xl mx-auto">
           <div className="text-xs uppercase tracking-[0.3em] mb-4 font-mono" style={{ color: 'var(--sage)' }}>● Cadre</div>
-          <h1 className="font-display text-5xl md:text-6xl" style={{ color: 'var(--cream)' }}>{content.ethicsTitle}</h1>
+          <h1 className="font-display" style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.75rem)', color: 'var(--cream)' }}>{content.ethicsTitle}</h1>
         </div>
       </div>
 
-      {/* Corps — texte gauche, image droite */}
-      <div className="px-6 py-16" style={{ background: 'var(--cream)' }}>
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-14 items-start">
-          {/* Bloc SFPS */}
+      {/* Intro — encart rose */}
+      <div className="px-6 py-12" style={{ background: 'var(--cream)' }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="rounded-2xl px-10 py-10 text-center" style={{ background: '#e6bfc2' }}>
+            <p className="text-base leading-relaxed mx-auto" style={{ color: 'var(--ink)', maxWidth: '60ch' }}>{content.ethicsText}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Accordion principes */}
+      <div className="px-6 pb-16" style={{ background: 'var(--cream)' }}>
+        <div className="max-w-5xl mx-auto">
           <div className="rounded-2xl px-10 py-12 flex flex-col items-center text-center" style={{ background: 'var(--sage-dark)' }}>
-            <h2 className="font-display text-3xl md:text-4xl mb-6 leading-tight" style={{ color: 'var(--cream)' }}>{content.ethicsTitle}</h2>
-            <p className="text-sm leading-relaxed mb-10" style={{ color: 'rgba(255,255,255,0.75)', maxWidth: '38ch' }}>{content.ethicsText}</p>
-            <div className="flex flex-col items-center gap-4 w-full">
-              {content.ethicsPrinciples.map((p, i) => (
-                <span key={i} className="font-mono text-xs uppercase tracking-widest pb-1" style={{ color: 'var(--cream)', borderBottom: '1.5px solid rgba(255,255,255,0.5)' }}>
-                  {p.title}
-                </span>
+            <div className="flex flex-col w-full" style={{ gap: 0 }}>
+              {principles.map((p, i) => (
+                <EthicsAccordionItem key={i} principle={p} />
               ))}
             </div>
-          </div>
-          {/* Image charte */}
-          <div className="md:sticky md:top-24">
-            <img
-              src={ethicsImg}
-              alt="Charte éthique"
-              className="w-full rounded-2xl shadow-lg object-contain"
-              style={{ border: '1px solid var(--line)' }}
-            />
           </div>
         </div>
       </div>

@@ -1,6 +1,4 @@
 import PocketBase from 'pocketbase';
 
-const PB_URL = import.meta.env.VITE_PB_URL || 'https://jodie.arsava.fr';
-
-export const pb = new PocketBase(PB_URL);
-export const isPbConfigured = true;
+export const pb = new PocketBase('http://127.0.0.1:8090');
+pb.autoCancellation(false);

@@ -4,26 +4,26 @@ import { pb } from '../lib/pocketbase.js';
 const AdminContext = createContext(null);
 
 export function AdminProvider({ children }) {
-  const [adminAuth, setAdminAuth] = useState(() => pb.authStore.isValid);
+  const [auth, setAuth] = useState(() => pb.authStore.isValid);
   const [toast, setToast] = useState(null);
 
-  const login = async (email, password) => {
-    await pb.collection('users').authWithPassword(email, password);
-    setAdminAuth(true);
+  const login = async (identifier, password) => {
+    await pb.collection('users').authWithPassword(identifier, password);
+    setAuth(true);
   };
 
   const logout = () => {
     pb.authStore.clear();
-    setAdminAuth(false);
+    setAuth(false);
   };
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
-    setTimeout(() => setToast(null), 2800);
+    setTimeout(() => setToast(null), 3000);
   };
 
   return (
-    <AdminContext.Provider value={{ adminAuth, login, logout, toast, showToast }}>
+    <AdminContext.Provider value={{ auth, login, logout, toast, showToast }}>
       {children}
     </AdminContext.Provider>
   );
