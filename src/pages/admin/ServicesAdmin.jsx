@@ -44,7 +44,7 @@ function ServiceForm({ service, onSave, onCancel }) {
     try {
       const data = {
         name: form.name,
-        duration: form.sur_devis ? 0 : (Number(form.duration) || 0),
+        duration: Number(form.duration) || 60,
         price: form.sur_devis ? 0 : (Number(form.price) || 0),
         price_label: form.price_label || '',
         sur_devis: form.sur_devis || false,
@@ -148,11 +148,31 @@ function ServiceForm({ service, onSave, onCancel }) {
             />
           </div>
         </div>
-        {isCustomColor && (
-          <div className="mt-1.5 text-xs font-mono" style={{ color: 'var(--color-ink-soft)' }}>
-            Couleur personnalisée : {customHex}
-          </div>
-        )}
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="text"
+            value={isCustomColor ? customHex : (PRESETS.find(p => p.id === form.color)?.hex || '')}
+            onChange={e => {
+              const v = e.target.value;
+              if (/^#[0-9a-fA-F]{0,6}$/.test(v)) set('color')(v.length === 7 ? v : v);
+            }}
+            onBlur={e => {
+              const v = e.target.value;
+              if (/^#[0-9a-fA-F]{6}$/.test(v)) set('color')(v);
+            }}
+            placeholder="#660000"
+            maxLength={7}
+            style={{ width: '7rem', padding: '0.3rem 0.5rem', borderRadius: '0.4rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.8rem', fontFamily: 'var(--font-mono)', outline: 'none' }}
+          />
+          {(isCustomColor || form.color?.startsWith('#')) && (
+            <span className="text-xs font-mono" style={{ color: 'var(--color-ink-soft)' }}>
+              aperçu :
+            </span>
+          )}
+          {(isCustomColor || form.color?.startsWith('#')) && (
+            <div style={{ width: '1.5rem', height: '1.5rem', borderRadius: '0.25rem', background: isCustomColor ? customHex : form.color, border: '1px solid var(--color-line)' }} />
+          )}
+        </div>
       </div>
 
       <div className="md:col-span-2 flex gap-2 mt-2">
