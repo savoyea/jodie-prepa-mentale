@@ -10,10 +10,11 @@ echo "==> Push GitHub..."
 git push
 
 echo "==> Deploy sur le VPS..."
-sshpass -P "Enter passphrase" -p "louboutin" ssh -i "$SSH_KEY" "${VPS_USER}@${VPS_IP}" "
+sshpass -P "Enter passphrase" -p "louboutin" ssh -o StrictHostKeyChecking=no -i "$SSH_KEY" "${VPS_USER}@${VPS_IP}" "
   cd ${REMOTE_DIR}
   git pull
   npm ci --prefer-offline
   npm run build
+  rsync -a --delete ${REMOTE_DIR}/dist/ /var/www/jodie-v2/
   echo '==> Done — https://jodie.arsava.fr'
 "
