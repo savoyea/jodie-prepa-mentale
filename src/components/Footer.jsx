@@ -165,24 +165,6 @@ export default function Footer() {
         </div>
       </footer>
 
-      {/* Bouton Réserver flottant */}
-      {(content.bookingUrl || true) && (
-        <Link
-          to={content.bookingUrl || '/contact'}
-          className="fixed bottom-6 right-6 z-50 px-6 py-3 rounded-full"
-          style={{
-            background: 'var(--color-sage-dark)',
-            color: '#fff',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.65rem',
-            textTransform: 'uppercase',
-            letterSpacing: '0.15em',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-          }}
-        >
-          Réserver
-        </Link>
-      )}
     </>
   );
 }
