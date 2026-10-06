@@ -2,8 +2,10 @@ import { useState } from 'react';
 
 /* CSS injected once for Quill-rendered HTML */
 const QUILL_CSS = `
-.ql-content p { margin-bottom: 0.75rem; line-height: 1.75; }
+.ql-content p { margin-bottom: 0.5rem; line-height: 1.7; }
 .ql-content p:last-child { margin-bottom: 0; }
+.ql-content p:empty { margin: 0; line-height: 0; height: 0; font-size: 0; }
+.ql-content p > br:only-child { display: block; content: ''; margin: 0; }
 .ql-content strong { font-weight: 700; }
 .ql-content em { font-style: italic; }
 .ql-content h2 { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 400; margin: 1.25rem 0 0.5rem; }
