@@ -396,6 +396,9 @@ function PageTab({ page, data, onChange }) {
       {/* Contenu spécifique à Qui suis-je ? */}
       {page.key === 'about' && <AboutExtraFields data={data} setData={setData} />}
 
+      {/* Contenu spécifique à Contact */}
+      {page.key === 'contact' && <ContactExtraFields data={data} setData={setData} />}
+
       {/* Sections personnalisées */}
       <div>
         <div className="flex items-center justify-between mb-4">
@@ -698,6 +701,23 @@ function WhatExtraFields({ data, setData }) {
   );
 }
 
+function ContactExtraFields({ data, setData }) {
+  const inp = { width: '100%', padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.875rem', outline: 'none' };
+  const lbl = (text) => <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-ink-soft)', marginBottom: '0.25rem' }}>{text}</label>;
+  return (
+    <div className="space-y-4" style={{ borderTop: '1px solid var(--color-line)', paddingTop: '1rem' }}>
+      <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--color-ink-soft)' }}>Informations de contact</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>{lbl('Titre de la page')}<input value={data.contactTitle || ''} onChange={e => setData('contactTitle', e.target.value)} placeholder="Écrivez-moi" style={inp} /></div>
+        <div>{lbl('Sous-titre')}<input value={data.contactSubtitle || ''} onChange={e => setData('contactSubtitle', e.target.value)} placeholder="Je suis disponible…" style={inp} /></div>
+        <div>{lbl('Téléphone')}<input value={data.contactPhone || ''} onChange={e => setData('contactPhone', e.target.value)} placeholder="07 83 15 70 30" style={inp} /></div>
+        <div>{lbl('Email')}<input value={data.contactEmail || ''} onChange={e => setData('contactEmail', e.target.value)} placeholder="jodie@example.com" style={inp} /></div>
+      </div>
+      <div>{lbl('Localisation')}<input value={data.contactLocation || ''} onChange={e => setData('contactLocation', e.target.value)} placeholder="Pays de la Loire — en présentiel ou en visio" style={inp} /></div>
+    </div>
+  );
+}
+
 function WidgetsTab({ activeWidget, setActiveWidget, data, onChange }) {
   const inp = { width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.875rem', outline: 'none' };
   return (
@@ -836,12 +856,46 @@ function GlobalTab({ activeGlobal, setActiveGlobal, data, onChange }) {
         </div>
       )}
 
-      {activeGlobal === 'Avis Google' && (
-        <div className="space-y-4">
-          <div>{lbl('Clé API Google')}<input value={data.googleApiKey || ''} onChange={e => set('googleApiKey', e.target.value)} style={inp} /></div>
-          <div>{lbl('Place ID')}<input value={data.googlePlaceId || ''} onChange={e => set('googlePlaceId', e.target.value)} style={inp} /></div>
-        </div>
-      )}
+      {activeGlobal === 'Avis Google' && (() => {
+        const reviews = data.googleReviews || [];
+        const addR = () => set('googleReviews', [...reviews, { id: String(Date.now()), author: '', rating: 5, text: '', date: '' }]);
+        const removeR = (i) => set('googleReviews', reviews.filter((_, idx) => idx !== i));
+        const updateR = (i, k, v) => { const nl = [...reviews]; nl[i] = { ...nl[i], [k]: v }; set('googleReviews', nl); };
+        return (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-4">
+              <div>{lbl('Note globale (ex: 4.9)')}<input value={data.googleRating || ''} onChange={e => set('googleRating', e.target.value)} placeholder="4.9" style={inp} /></div>
+              <div>{lbl('Nombre d\'avis (ex: 37)')}<input value={data.googleRatingCount || ''} onChange={e => set('googleRatingCount', e.target.value)} placeholder="37" style={inp} /></div>
+            </div>
+            <div>
+              {lbl('Avis clients')}
+              <div className="space-y-3 mt-1">
+                {reviews.map((r, i) => (
+                  <div key={r.id || i} className="rounded-xl p-4" style={{ background: 'var(--color-cream-light)', border: '1px solid var(--color-line)' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--color-ink-soft)', textTransform: 'uppercase' }}>Avis {i + 1}</span>
+                      <button type="button" onClick={() => removeR(i)} style={{ color: '#ef4444' }}><X size={14} /></button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <input value={r.author || ''} onChange={e => updateR(i, 'author', e.target.value)} placeholder="Prénom Nom" style={inp} />
+                      <select value={r.rating || 5} onChange={e => updateR(i, 'rating', Number(e.target.value))} style={inp}>
+                        {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ★</option>)}
+                      </select>
+                    </div>
+                    <textarea value={r.text || ''} onChange={e => updateR(i, 'text', e.target.value)} placeholder="Texte de l'avis…" rows={3} style={{ ...inp, resize: 'vertical' }} />
+                    <input value={r.date || ''} onChange={e => updateR(i, 'date', e.target.value)} placeholder="Date (ex: Octobre 2024)" style={{ ...inp, marginTop: '0.5rem' }} />
+                  </div>
+                ))}
+                <button type="button" onClick={addR}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{ border: '1px solid var(--color-line)', color: 'var(--color-ink-soft)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem' }}>
+                  <Plus size={13} /> Ajouter un avis
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {activeGlobal === 'Pages légales' && (
         <div className="space-y-6">

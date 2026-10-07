@@ -46,8 +46,13 @@ export default function Contact() {
             Contact
           </p>
           <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, color: 'var(--color-ink)', lineHeight: 1.1 }}>
-            Écrivez-moi
+            {content.contactTitle || 'Écrivez-moi'}
           </h1>
+          {content.contactSubtitle && (
+            <p style={{ marginTop: '1rem', color: 'var(--color-ink-soft)', fontSize: '1rem', lineHeight: 1.7 }}>
+              {content.contactSubtitle}
+            </p>
+          )}
         </div>
       </section>
 

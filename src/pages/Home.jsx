@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, Instagram, Linkedin, Check } from 'lucide-react';
+import { ArrowDown, Instagram, Linkedin, Check, Star } from 'lucide-react';
 import { useSite } from '../contexts/SiteContext.jsx';
 import { Sections } from '../components/SectionRenderer.jsx';
 
@@ -100,12 +100,23 @@ function ServiceCard({ service, index }) {
   );
 }
 
+function StarRating({ rating }) {
+  return (
+    <div className="flex gap-0.5">
+      {[1,2,3,4,5].map(n => (
+        <Star key={n} size={14} fill={n <= rating ? 'var(--color-sage-dark)' : 'none'} stroke={n <= rating ? 'var(--color-sage-dark)' : 'var(--color-line)'} />
+      ))}
+    </div>
+  );
+}
+
 export default function Home() {
   const { content, services } = useSite();
   const social = content.socialLinks || {};
   const stats = content.stats || {};
   const forWhom = content.forWhomItems || [];
   const sections = content.heroSections || [];
+  const reviews = content.googleReviews || [];
 
   return (
     <>
@@ -277,6 +288,49 @@ export default function Home() {
       )}
       <Sections sections={sections} position="after-forwhom" />
       <Sections sections={sections} position="after-all" />
+
+      {/* Avis Google */}
+      {reviews.length > 0 && (
+        <section className="py-20 px-6" style={{ background: 'var(--color-cream)' }}>
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center mb-12">
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.2em', color: 'var(--color-sage-dark)', marginBottom: '0.75rem' }}>
+                Témoignages
+              </p>
+              <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 400, color: 'var(--color-ink)', marginBottom: '0.5rem' }}>
+                Ce qu'ils disent
+              </h2>
+              {(content.googleRating || content.googleRatingCount) && (
+                <div className="flex items-center justify-center gap-3 mt-3">
+                  {content.googleRating && (
+                    <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', color: 'var(--color-ink)' }}>{content.googleRating}</span>
+                  )}
+                  <StarRating rating={Math.round(parseFloat(content.googleRating || 5))} />
+                  {content.googleRatingCount && (
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--color-ink-soft)' }}>
+                      {content.googleRatingCount} avis Google
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reviews.map((r, i) => (
+                <div key={r.id || i} className="rounded-2xl p-6 flex flex-col gap-4" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>
+                  <StarRating rating={r.rating || 5} />
+                  <p style={{ color: 'var(--color-ink-soft)', fontSize: '0.9rem', lineHeight: 1.7, flex: 1 }}>
+                    « {r.text} »
+                  </p>
+                  <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid var(--color-line)' }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-ink)' }}>{r.author}</span>
+                    {r.date && <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--color-ink-soft)' }}>{r.date}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
     </>
   );
 }
