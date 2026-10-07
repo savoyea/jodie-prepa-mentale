@@ -243,6 +243,8 @@ export default function Planning() {
   const [weekStart, setWeekStart]       = useState(getWeekStart(new Date()));
   const [modal, setModal]               = useState(null);
   const [bookingModal, setBookingModal] = useState(null);
+  const [filterService, setFilterService] = useState('');
+  const [filterStatus, setFilterStatus]   = useState('');
 
   // Ajout ponctuel
   const [pDate, setPDate]         = useState('');
@@ -612,32 +614,41 @@ export default function Planning() {
         <span style={{ fontFamily: 'var(--font-serif)', fontSize: '1.25rem', color: 'var(--color-ink)' }}>{weekLabel}</span>
       </div>
 
-      {/* Service legend */}
+      {/* Service + status filters */}
       {services.length > 0 && (
-        <div className="flex gap-3 mb-4 flex-wrap">
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-ink-soft)', alignSelf: 'center' }}>Services :</span>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-full" style={{ background: 'var(--color-sage-light)', border: '1px solid var(--color-line)' }} />
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--color-ink-soft)' }}>Tous</span>
-          </div>
-          {services.map(s => (
-            <div key={s.id} className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ background: svcColorBg(s.color) || 'var(--color-sage-light)', border: `1px solid ${svcColorFg(s.color) || 'var(--color-ink-soft)'}40` }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: 'var(--color-ink-soft)' }}>{s.name}</span>
-            </div>
-          ))}
-          <div style={{ width: '1px', background: 'var(--color-line)', margin: '0 0.25rem' }} />
+        <div className="flex gap-2 mb-4 flex-wrap items-center">
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-ink-soft)', alignSelf: 'center', marginRight: '0.25rem' }}>Services :</span>
+          {[{ id: '', name: 'Tous', color: null }, ...services].map(s => {
+            const active = filterService === s.id;
+            const bg = s.id ? svcColorBg(s.color) : 'var(--color-sage-light)';
+            const fg = s.id ? svcColorFg(s.color) : 'var(--color-ink-soft)';
+            return (
+              <button key={s.id} onClick={() => setFilterService(active ? '' : s.id)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all"
+                style={{ background: active ? (bg || 'var(--color-sage-light)') : 'transparent', border: `1px solid ${active ? (fg || 'var(--color-line)') : 'var(--color-line)'}`, cursor: 'pointer' }}>
+                <div className="w-2.5 h-2.5 rounded-full" style={{ background: bg || 'var(--color-sage-light)', border: `1px solid ${fg || 'var(--color-line)'}40`, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: active ? (fg || 'var(--color-ink)') : 'var(--color-ink-soft)' }}>{s.name}</span>
+              </button>
+            );
+          })}
+          <div style={{ width: '1px', background: 'var(--color-line)', alignSelf: 'stretch', margin: '0 0.25rem' }} />
           {[
-            { color: '#16a34a', label: 'Libre' },
-            { color: '#d97706', label: 'En attente' },
-            { color: '#1e40af', label: 'Confirmé' },
-            { color: '#991b1b', label: 'Bloqué' },
-          ].map(({ color, label }) => (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--color-ink-soft)' }}>{label}</span>
-            </div>
-          ))}
+            { key: '', label: 'Tous', color: 'var(--color-line)', fg: 'var(--color-ink-soft)' },
+            { key: 'available', label: 'Libre', color: '#16a34a', fg: '#166534' },
+            { key: 'pending', label: 'En attente', color: '#d97706', fg: '#92400e' },
+            { key: 'confirmed', label: 'Confirmé', color: '#1e40af', fg: '#1e40af' },
+            { key: 'blocked', label: 'Bloqué', color: '#991b1b', fg: '#991b1b' },
+          ].map(({ key, label, color, fg }) => {
+            const active = filterStatus === key;
+            return (
+              <button key={key} onClick={() => setFilterStatus(active ? '' : key)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all"
+                style={{ background: active ? `${color}20` : 'transparent', border: `1px solid ${active ? color : 'var(--color-line)'}`, cursor: 'pointer' }}>
+                <div className="w-2 h-2 rounded-full" style={{ background: color, flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: active ? fg : 'var(--color-ink-soft)' }}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -645,7 +656,20 @@ export default function Planning() {
       <div className="grid grid-cols-7 gap-2">
         {weekDays.map((day, i) => {
           const dateStr = toLocalDate(day);
-          const daySlots = slots.filter(s => s.date === dateStr).sort((a,b) => a.time.localeCompare(b.time));
+          const daySlots = slots.filter(s => {
+            if (s.date !== dateStr) return false;
+            const bk = bookingMap[`${s.date}|${s.time?.slice(0,5)}`];
+            if (filterService) {
+              if (bk) { if (bk.service_id !== filterService) return false; }
+              else { if (s.service_id !== filterService) return false; }
+            }
+            if (filterStatus) {
+              if (filterStatus === 'available') { if (!s.available || bk) return false; }
+              else if (filterStatus === 'blocked') { if (s.available || bk) return false; }
+              else { if (!bk || bk.status !== filterStatus) return false; }
+            }
+            return true;
+          }).sort((a,b) => a.time.localeCompare(b.time));
           const isToday = dateStr === today;
           return (
             <div key={i}>
