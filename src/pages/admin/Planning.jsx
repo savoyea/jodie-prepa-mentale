@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Trash2, RefreshCw, Lock, User, Phone, Mail, Clock, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Trash2, RefreshCw, Lock, User, Mail, Clock, MessageSquare } from 'lucide-react';
 import { pb } from '../../lib/pocketbase.js';
 import { useAdmin } from '../../contexts/AdminContext.jsx';
 
@@ -246,6 +246,12 @@ export default function Planning() {
   const [filterService, setFilterService] = useState('');
   const [filterStatus, setFilterStatus]   = useState('');
 
+  // Suppression en masse
+  const [showBulkDel, setShowBulkDel]       = useState(false);
+  const [bulkDelScope, setBulkDelScope]     = useState('week');
+  const [bulkDelService, setBulkDelService] = useState('');
+  const [bulkDeleting, setBulkDeleting]     = useState(false);
+
   // Ajout ponctuel
   const [pDate, setPDate]         = useState('');
   const [pTime, setPTime]         = useState('09:00');
@@ -374,6 +380,47 @@ export default function Planning() {
     load();
   };
 
+  const runBulkDelete = async () => {
+    setBulkDeleting(true);
+    try {
+      let slotFilter = '';
+      if (bulkDelScope === 'week') {
+        const start = toLocalDate(weekDays[0]);
+        const end   = toLocalDate(weekDays[6]);
+        slotFilter = `date>="${start}" && date<="${end}"`;
+      } else if (bulkDelScope === 'past') {
+        slotFilter = `date<"${today}"`;
+      } else if (bulkDelScope === 'service') {
+        slotFilter = bulkDelService ? `service_id="${bulkDelService}"` : 'id!=""';
+      } else if (bulkDelScope === 'all') {
+        slotFilter = 'id!=""';
+      }
+
+      const [slotsToCheck, activeBookings] = await Promise.all([
+        pb.collection('slots').getFullList({ filter: slotFilter }).catch(() => []),
+        bulkDelScope !== 'all'
+          ? pb.collection('bookings').getFullList({ filter: 'status!="cancelled"' }).catch(() => [])
+          : Promise.resolve([]),
+      ]);
+
+      const bookedKeys = new Set(activeBookings.map(b => `${b.date}|${b.time?.slice(0,5)}`));
+      const toDelete = bulkDelScope === 'all'
+        ? slotsToCheck
+        : slotsToCheck.filter(s => !bookedKeys.has(`${s.date}|${s.time?.slice(0,5)}`));
+
+      let count = 0;
+      for (const s of toDelete) {
+        try { await pb.collection('slots').delete(s.id); count++; } catch {}
+      }
+
+      showToast(`${count} créneau${count > 1 ? 'x' : ''} supprimé${count > 1 ? 's' : ''}`);
+      setShowBulkDel(false);
+      load();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   const toggleAvailable = async (slot) => {
     await pb.collection('slots').update(slot.id, { available: !slot.available });
     load();
@@ -419,13 +466,76 @@ export default function Planning() {
 
       <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
         <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', fontWeight: 400, color: 'var(--color-ink)' }}>Planning</h1>
-        <button
-          onClick={() => setShowGen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full"
-          style={{ background: 'var(--color-sage-dark)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer' }}>
-          <Plus size={14} /> Générer des créneaux
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setShowBulkDel(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full"
+            style={{ background: '#fee2e2', color: '#991b1b', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: '1px solid #fca5a5', cursor: 'pointer' }}>
+            <Trash2 size={13} /> Supprimer
+          </button>
+          <button
+            onClick={() => setShowGen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-full"
+            style={{ background: 'var(--color-sage-dark)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: 'pointer' }}>
+            <Plus size={14} /> Générer des créneaux
+          </button>
+        </div>
       </div>
+
+      {/* ── Modale suppression en masse ── */}
+      {showBulkDel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }}>
+          <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#fff' }}>
+            <div className="px-6 py-5 flex items-start justify-between" style={{ background: '#fef2f2', borderBottom: '1px solid #fca5a5' }}>
+              <div>
+                <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.5rem', fontWeight: 400, color: '#991b1b' }}>Suppression en masse</h3>
+                <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: '#b91c1c', marginTop: '0.25rem' }}>Les créneaux avec réservation active sont préservés (sauf "Tout").</p>
+              </div>
+              <button onClick={() => setShowBulkDel(false)} style={{ color: '#991b1b', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              {[
+                { key: 'week',    label: 'Semaine visible',          desc: 'Créneaux libres de la semaine affichée' },
+                { key: 'past',    label: 'Créneaux passés',          desc: 'Tous les créneaux libres avant aujourd\'hui' },
+                { key: 'service', label: 'Par service',              desc: 'Tous les créneaux libres d\'un service donné' },
+                { key: 'all',     label: 'TOUT (y compris réservés)', desc: 'Supprime absolument tous les créneaux — irréversible' },
+              ].map(opt => (
+                <label key={opt.key} className="flex items-start gap-3 rounded-xl p-3 cursor-pointer"
+                  style={{ border: `2px solid ${bulkDelScope === opt.key ? (opt.key === 'all' ? '#dc2626' : 'var(--color-sage-dark)') : 'var(--color-line)'}`, background: bulkDelScope === opt.key ? (opt.key === 'all' ? '#fef2f2' : 'var(--color-sage-light)') : '#fff' }}>
+                  <input type="radio" name="bulkScope" value={opt.key} checked={bulkDelScope === opt.key} onChange={() => setBulkDelScope(opt.key)} style={{ marginTop: '0.2rem', accentColor: opt.key === 'all' ? '#dc2626' : 'var(--color-sage-dark)' }} />
+                  <div>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', fontWeight: 600, color: opt.key === 'all' ? '#dc2626' : 'var(--color-ink)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{opt.label}</p>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--color-ink-soft)', marginTop: '0.125rem' }}>{opt.desc}</p>
+                  </div>
+                </label>
+              ))}
+
+              {bulkDelScope === 'service' && (
+                <div className="mt-1">
+                  <select value={bulkDelService} onChange={e => setBulkDelService(e.target.value)} style={{ ...inp, width: '100%' }}>
+                    <option value="">— Choisir un service —</option>
+                    {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 px-6 pb-6">
+              <button onClick={() => setShowBulkDel(false)} className="flex-1 py-3 rounded-full" style={{ border: '1px solid var(--color-line)', color: 'var(--color-ink-soft)', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', background: 'none', cursor: 'pointer' }}>
+                Annuler
+              </button>
+              <button onClick={runBulkDelete}
+                disabled={bulkDeleting || (bulkDelScope === 'service' && !bulkDelService)}
+                className="flex items-center justify-center gap-2 flex-1 py-3 rounded-full"
+                style={{ background: bulkDelScope === 'all' ? '#dc2626' : '#991b1b', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', border: 'none', cursor: bulkDeleting ? 'not-allowed' : 'pointer', opacity: bulkDeleting || (bulkDelScope === 'service' && !bulkDelService) ? 0.6 : 1 }}>
+                {bulkDeleting ? <RefreshCw size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {bulkDeleting ? 'Suppression…' : 'Confirmer la suppression'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Ajout ponctuel ── */}
       <div className="rounded-2xl p-4 mb-4" style={{ background: '#fff', border: '1px solid var(--color-line)' }}>

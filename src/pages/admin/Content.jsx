@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Save, Plus, X, ChevronDown, ChevronUp, Trash2, ExternalLink } from 'lucide-react';
+import { Save, Plus, X, ChevronDown, ChevronUp, Trash2, ExternalLink, RefreshCw } from 'lucide-react';
 import { pb } from '../../lib/pocketbase.js';
 import { useAdmin } from '../../contexts/AdminContext.jsx';
 import { useSite } from '../../contexts/SiteContext.jsx';
@@ -753,6 +753,8 @@ function GlobalTab({ activeGlobal, setActiveGlobal, data, onChange }) {
   const set = (k, v) => onChange({ ...data, [k]: v });
   const inp = { width: '100%', padding: '0.625rem 0.875rem', borderRadius: '0.625rem', border: '1px solid var(--color-line)', background: 'var(--color-cream-light)', fontSize: '0.875rem', outline: 'none' };
   const lbl = (text) => <label style={{ display: 'block', fontFamily: 'var(--font-mono)', fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-ink-soft)', marginBottom: '0.25rem' }}>{text}</label>;
+  const [fetchingGoogle, setFetchingGoogle] = useState(false);
+  const [googleFetchMsg, setGoogleFetchMsg] = useState('');
 
   const social = data.socialLinks || {};
   const setNav = (k, v) => set(k, v);
@@ -861,12 +863,64 @@ function GlobalTab({ activeGlobal, setActiveGlobal, data, onChange }) {
         const addR = () => set('googleReviews', [...reviews, { id: String(Date.now()), author: '', rating: 5, text: '', date: '' }]);
         const removeR = (i) => set('googleReviews', reviews.filter((_, idx) => idx !== i));
         const updateR = (i, k, v) => { const nl = [...reviews]; nl[i] = { ...nl[i], [k]: v }; set('googleReviews', nl); };
+
+        const fetchFromGoogle = async () => {
+          setFetchingGoogle(true);
+          setGoogleFetchMsg('');
+          try {
+            const res = await pb.send('/api/pb/google-reviews', { method: 'GET' });
+            const newReviews = (res.reviews || []).map(r => ({ ...r, id: r.id || String(Date.now() + Math.random()) }));
+            onChange({
+              ...data,
+              googleRating: res.rating !== undefined ? String(res.rating) : data.googleRating,
+              googleRatingCount: res.user_ratings_total !== undefined ? String(res.user_ratings_total) : data.googleRatingCount,
+              googleReviews: newReviews,
+            });
+            setGoogleFetchMsg(`OK — ${newReviews.length} avis importés (note: ${res.rating})`);
+          } catch (err) {
+            const msg = err?.response?.message || err?.data?.error || String(err);
+            setGoogleFetchMsg('Erreur : ' + msg);
+          } finally {
+            setFetchingGoogle(false);
+          }
+        };
+
         return (
           <div className="space-y-5">
+            {/* Clés API */}
+            <div className="rounded-xl p-4" style={{ background: 'var(--color-sage-light)', border: '1px solid var(--color-line)' }}>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-sage-dark)', marginBottom: '0.75rem', fontWeight: 600 }}>
+                Connexion Google Places
+              </p>
+              <div className="grid grid-cols-2 gap-4 mb-3">
+                <div>{lbl('Clé API Google')}<input value={data.googleApiKey || ''} onChange={e => set('googleApiKey', e.target.value)} placeholder="AIza…" style={inp} /></div>
+                <div>{lbl('Place ID')}<input value={data.googlePlaceId || ''} onChange={e => set('googlePlaceId', e.target.value)} placeholder="ChIJ…" style={inp} /></div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button type="button" onClick={fetchFromGoogle} disabled={fetchingGoogle || !data.googleApiKey || !data.googlePlaceId}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{ background: data.googleApiKey && data.googlePlaceId ? 'var(--color-sage-dark)' : 'var(--color-line)', color: '#fff', fontFamily: 'var(--font-mono)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', cursor: fetchingGoogle || !data.googleApiKey || !data.googlePlaceId ? 'not-allowed' : 'pointer', opacity: fetchingGoogle ? 0.7 : 1 }}>
+                  <RefreshCw size={13} className={fetchingGoogle ? 'animate-spin' : ''} />
+                  {fetchingGoogle ? 'Récupération…' : 'Récupérer depuis Google'}
+                </button>
+                {googleFetchMsg && (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.65rem', color: googleFetchMsg.startsWith('Erreur') ? '#991b1b' : '#166534' }}>
+                    {googleFetchMsg}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: 'var(--color-ink-soft)', marginTop: '0.5rem' }}>
+                Si renseignés, cliquez le bouton pour importer automatiquement la note et les avis Google.
+              </p>
+            </div>
+
+            {/* Note + compteur (modifiables manuellement) */}
             <div className="grid grid-cols-2 gap-4">
               <div>{lbl('Note globale (ex: 4.9)')}<input value={data.googleRating || ''} onChange={e => set('googleRating', e.target.value)} placeholder="4.9" style={inp} /></div>
               <div>{lbl('Nombre d\'avis (ex: 37)')}<input value={data.googleRatingCount || ''} onChange={e => set('googleRatingCount', e.target.value)} placeholder="37" style={inp} /></div>
             </div>
+
+            {/* Avis manuels */}
             <div>
               {lbl('Avis clients')}
               <div className="space-y-3 mt-1">
